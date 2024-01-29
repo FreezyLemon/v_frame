@@ -827,7 +827,7 @@ impl<'a, T: Pixel> PlaneSlice<'a, T> {
         }
     }
 
-    pub fn subslice(&self, xo: u32, yo: u32) -> PlaneSlice<'a, T> {
+    pub fn subslice(&self, xo: usize, yo: usize) -> PlaneSlice<'a, T> {
         PlaneSlice {
             plane: self.plane,
             x: self.x + xo as isize,
