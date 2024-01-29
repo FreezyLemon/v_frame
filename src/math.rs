@@ -10,29 +10,47 @@
 use num_traits::PrimInt;
 use std::mem::size_of;
 
-// TODO: Implement this for u32
 pub trait Fixed {
-    fn floor_log2(&self, n: usize) -> usize;
-    fn ceil_log2(&self, n: usize) -> usize;
-    fn align_power_of_two(&self, n: usize) -> usize;
-    fn align_power_of_two_and_shift(&self, n: usize) -> usize;
+    fn floor_log2(&self, n: u32) -> Self;
+    fn ceil_log2(&self, n: u32) -> Self;
+    fn align_power_of_two(&self, n: u32) -> Self;
+    fn align_power_of_two_and_shift(&self, n: u32) -> Self;
 }
 
-impl Fixed for usize {
+impl Fixed for u32 {
     #[inline]
-    fn floor_log2(&self, n: usize) -> usize {
+    fn floor_log2(&self, n: u32) -> Self {
         self & !((1 << n) - 1)
     }
     #[inline]
-    fn ceil_log2(&self, n: usize) -> usize {
+    fn ceil_log2(&self, n: u32) -> Self {
         (self + (1 << n) - 1).floor_log2(n)
     }
     #[inline]
-    fn align_power_of_two(&self, n: usize) -> usize {
+    fn align_power_of_two(&self, n: u32) -> Self {
         self.ceil_log2(n)
     }
     #[inline]
-    fn align_power_of_two_and_shift(&self, n: usize) -> usize {
+    fn align_power_of_two_and_shift(&self, n: u32) -> Self {
+        (self + (1 << n) - 1) >> n
+    }
+}
+
+impl Fixed for u16 {
+    #[inline]
+    fn floor_log2(&self, n: u32) -> Self {
+        self & !((1 << n) - 1)
+    }
+    #[inline]
+    fn ceil_log2(&self, n: u32) -> Self {
+        (self + (1 << n) - 1).floor_log2(n)
+    }
+    #[inline]
+    fn align_power_of_two(&self, n: u32) -> Self {
+        self.ceil_log2(n)
+    }
+    #[inline]
+    fn align_power_of_two_and_shift(&self, n: u32) -> Self {
         (self + (1 << n) - 1) >> n
     }
 }

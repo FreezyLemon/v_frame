@@ -48,7 +48,7 @@ pub struct PlaneConfig {
 
 impl PlaneConfig {
     /// Stride alignment in bytes.
-    const STRIDE_ALIGNMENT_LOG2: usize = 6;
+    const STRIDE_ALIGNMENT_LOG2: u32 = 6;
 
     #[inline]
     pub fn new(
@@ -58,14 +58,14 @@ impl PlaneConfig {
         ydec: u8,
         xpad: u16,
         ypad: u16,
-        type_size: usize,
+        type_size: u16,
     ) -> Self {
         // FIXME: Update this weird usize/u32 casting
         let xorigin =
-            u16::try_from((xpad as usize).align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size)).expect("xorigin fits into u16");
+            xpad.align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size as u32);
         let yorigin = ypad;
-        let stride = (xorigin as usize + width as usize + xpad as usize)
-            .align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size)
+        let stride = (xorigin as u32 + width + xpad as u32)
+            .align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size as u32)
             as u32;
 
         PlaneConfig {
@@ -264,7 +264,7 @@ where
 impl<T: Pixel> Plane<T> {
     /// Allocates and returns a new plane.
     pub fn new(width: u32, height: u32, xdec: u8, ydec: u8, xpad: u16, ypad: u16) -> Self {
-        let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
+        let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>() as u16);
         let data = PlaneData::new((cfg.stride * cfg.alloc_height()) as usize);
 
         Plane { data, cfg }
@@ -279,7 +279,7 @@ impl<T: Pixel> Plane<T> {
         xpad: u16,
         ypad: u16,
     ) -> Self {
-        let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
+        let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>() as u16);
         let data = PlaneData::new_uninitialized((cfg.stride * cfg.alloc_height()) as usize);
 
         Plane { data, cfg }
