@@ -450,7 +450,7 @@ impl<T: Pixel> Plane<T> {
     pub fn copy_from_raw_u8(
         &mut self,
         source: &[u8],
-        source_stride: usize,
+        source_stride: u32,
         source_bytewidth: usize,
     ) {
         let stride = self.cfg.stride;
@@ -461,7 +461,7 @@ impl<T: Pixel> Plane<T> {
         for (self_row, source_row) in self
             .data_origin_mut()
             .chunks_exact_mut(stride as usize)
-            .zip(source.chunks_exact(source_stride))
+            .zip(source.chunks_exact(source_stride as usize))
         {
             match source_bytewidth {
                 1 => {
@@ -501,12 +501,12 @@ impl<T: Pixel> Plane<T> {
     /// # Panics
     ///
     /// - If `dest_bytewidth` does not match the generic `T` of `Plane`
-    pub fn copy_to_raw_u8(&self, dest: &mut [u8], dest_stride: usize, dest_bytewidth: usize) {
+    pub fn copy_to_raw_u8(&self, dest: &mut [u8], dest_stride: u32, dest_bytewidth: usize) {
         let stride = self.cfg.stride;
         for (self_row, dest_row) in self
             .data_origin()
             .chunks_exact(stride as usize)
-            .zip(dest.chunks_exact_mut(dest_stride))
+            .zip(dest.chunks_exact_mut(dest_stride as usize))
         {
             match dest_bytewidth {
                 1 => {
