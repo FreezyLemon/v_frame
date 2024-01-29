@@ -24,13 +24,13 @@ impl<T: Pixel> Frame<T> {
     ///
     /// Allocates data for the planes.
     pub fn new_with_padding(
-        width: usize,
-        height: usize,
+        width: u32,
+        height: u32,
         chroma_sampling: ChromaSampling,
-        luma_padding: usize,
+        luma_padding: u32,
     ) -> Self {
-        let luma_width = width.align_power_of_two(3);
-        let luma_height = height.align_power_of_two(3);
+        let luma_width = (width as usize).align_power_of_two(3) as u32;
+        let luma_height = (height as usize).align_power_of_two(3) as u32;
 
         let (chroma_decimation_x, chroma_decimation_y) =
             chroma_sampling.get_decimation().unwrap_or((0, 0));

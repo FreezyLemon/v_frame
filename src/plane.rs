@@ -8,18 +8,12 @@
 // PATENTS file, you can obtain it at www.aomedia.org/license/patent.
 
 use std::alloc::handle_alloc_error;
+use std::alloc::{alloc, dealloc, Layout};
+use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::{Index, IndexMut, Range};
-use std::{
-    alloc::{alloc, dealloc, Layout},
-    u32,
-};
-use std::{
-    fmt::{Debug, Display, Formatter},
-    usize,
-};
 
 use crate::math::*;
 use crate::pixel::*;
@@ -29,29 +23,29 @@ use crate::serialize::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PlaneConfig {
     /// Data stride.
-    pub stride: usize,
+    pub stride: u32,
     /// Allocated height in pixels.
-    pub alloc_height: usize,
+    pub alloc_height: u32,
     /// Width in pixels.
-    pub width: usize,
+    pub width: u32,
     /// Height in pixels.
-    pub height: usize,
+    pub height: u32,
     /// Decimator along the X axis.
     ///
     /// For example, for chroma planes in a 4:2:0 configuration this would be 1.
-    pub xdec: usize,
+    pub xdec: u32,
     /// Decimator along the Y axis.
     ///
     /// For example, for chroma planes in a 4:2:0 configuration this would be 1.
-    pub ydec: usize,
+    pub ydec: u32,
     /// Number of padding pixels on the right.
-    pub xpad: usize,
+    pub xpad: u32,
     /// Number of padding pixels on the bottom.
-    pub ypad: usize,
+    pub ypad: u32,
     /// X where the data starts.
-    pub xorigin: usize,
+    pub xorigin: u32,
     /// Y where the data starts.
-    pub yorigin: usize,
+    pub yorigin: u32,
 }
 
 impl PlaneConfig {
@@ -60,18 +54,21 @@ impl PlaneConfig {
 
     #[inline]
     pub fn new(
-        width: usize,
-        height: usize,
-        xdec: usize,
-        ydec: usize,
-        xpad: usize,
-        ypad: usize,
+        width: u32,
+        height: u32,
+        xdec: u32,
+        ydec: u32,
+        xpad: u32,
+        ypad: u32,
         type_size: usize,
     ) -> Self {
-        let xorigin = xpad.align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size);
+        // FIXME: Update this weird usize/u32 casting
+        let xorigin =
+            (xpad as usize).align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size) as u32;
         let yorigin = ypad;
-        let stride = (xorigin + width + xpad)
-            .align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size);
+        let stride = ((xorigin + width + xpad) as usize)
+            .align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size)
+            as u32;
         let alloc_height = yorigin + height + ypad;
 
         PlaneConfig {
@@ -265,31 +262,24 @@ where
 
 impl<T: Pixel> Plane<T> {
     /// Allocates and returns a new plane.
-    pub fn new(
-        width: usize,
-        height: usize,
-        xdec: usize,
-        ydec: usize,
-        xpad: usize,
-        ypad: usize,
-    ) -> Self {
+    pub fn new(width: u32, height: u32, xdec: u32, ydec: u32, xpad: u32, ypad: u32) -> Self {
         let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
-        let data = PlaneData::new(cfg.stride * cfg.alloc_height);
+        let data = PlaneData::new((cfg.stride * cfg.alloc_height) as usize);
 
         Plane { data, cfg }
     }
 
     /// Allocates and returns an uninitialized plane.
     unsafe fn new_uninitialized(
-        width: usize,
-        height: usize,
-        xdec: usize,
-        ydec: usize,
-        xpad: usize,
-        ypad: usize,
+        width: u32,
+        height: u32,
+        xdec: u32,
+        ydec: u32,
+        xpad: u32,
+        ypad: u32,
     ) -> Self {
         let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
-        let data = PlaneData::new_uninitialized(cfg.stride * cfg.alloc_height);
+        let data = PlaneData::new_uninitialized((cfg.stride * cfg.alloc_height) as usize);
 
         Plane { data, cfg }
     }
@@ -297,8 +287,8 @@ impl<T: Pixel> Plane<T> {
     /// # Panics
     ///
     /// - If `len` is not a multiple of `stride`
-    pub fn from_slice(data: &[T], stride: usize) -> Self {
-        let len = data.len();
+    pub fn from_slice(data: &[T], stride: u32) -> Self {
+        let len = u32::try_from(data.len()).expect("can fit into 4GiB");
 
         assert!(len % stride == 0);
 
@@ -319,13 +309,14 @@ impl<T: Pixel> Plane<T> {
         }
     }
 
-    pub fn pad(&mut self, w: usize, h: usize) {
-        let xorigin = self.cfg.xorigin;
-        let yorigin = self.cfg.yorigin;
-        let stride = self.cfg.stride;
-        let alloc_height = self.cfg.alloc_height;
-        let width = (w + self.cfg.xdec) >> self.cfg.xdec;
-        let height = (h + self.cfg.ydec) >> self.cfg.ydec;
+    pub fn pad(&mut self, w: u32, h: u32) {
+        // convert/widen to usize to make indexing easier
+        let xorigin = self.cfg.xorigin as usize;
+        let yorigin = self.cfg.yorigin as usize;
+        let stride = self.cfg.stride as usize;
+        let alloc_height = self.cfg.alloc_height as usize;
+        let width = ((w + self.cfg.xdec) >> self.cfg.xdec) as usize;
+        let height = ((h + self.cfg.ydec) >> self.cfg.ydec) as usize;
 
         if xorigin > 0 {
             for y in 0..height {
@@ -356,7 +347,7 @@ impl<T: Pixel> Plane<T> {
             }
         }
 
-        if yorigin + height < self.cfg.alloc_height {
+        if yorigin + height < alloc_height {
             let (top, bottom) = self.data.split_at_mut((yorigin + height) * stride);
             let src = &top[(yorigin + height - 1) * stride..];
             for y in 0..alloc_height - (yorigin + height) {
@@ -367,7 +358,7 @@ impl<T: Pixel> Plane<T> {
     }
 
     /// Minimally test that the plane has been padded.
-    pub fn probe_padding(&self, w: usize, h: usize) -> bool {
+    pub fn probe_padding(&self, w: u32, h: u32) -> bool {
         let PlaneConfig {
             xorigin,
             yorigin,
@@ -380,11 +371,12 @@ impl<T: Pixel> Plane<T> {
         let width = (w + xdec) >> xdec;
         let height = (h + ydec) >> ydec;
         let corner = (yorigin + height - 1) * stride + xorigin + width - 1;
-        let corner_value = self.data[corner];
+        let corner_value = self.data[corner as usize];
 
-        self.data[(yorigin + height) * stride - 1] == corner_value
-            && self.data[(alloc_height - 1) * stride + xorigin + width - 1] == corner_value
-            && self.data[alloc_height * stride - 1] == corner_value
+        self.data[((yorigin + height) * stride - 1) as usize] == corner_value
+            && self.data[((alloc_height - 1) * stride + xorigin + width - 1) as usize]
+                == corner_value
+            && self.data[(alloc_height * stride - 1) as usize] == corner_value
     }
 
     pub fn slice(&self, po: PlaneOffset) -> PlaneSlice<'_, T> {
@@ -405,7 +397,7 @@ impl<T: Pixel> Plane<T> {
 
     #[inline]
     fn index(&self, x: usize, y: usize) -> usize {
-        (y + self.cfg.yorigin) * self.cfg.stride + (x + self.cfg.xorigin)
+        (y + self.cfg.yorigin as usize) * self.cfg.stride as usize + (x + self.cfg.xorigin as usize)
     }
 
     /// This version of the function crops off the padding on the right side of the image
@@ -415,7 +407,7 @@ impl<T: Pixel> Plane<T> {
         debug_assert!(self.cfg.xorigin as isize + x >= 0);
         let base_y = (self.cfg.yorigin as isize + y) as usize;
         let base_x = (self.cfg.xorigin as isize + x) as usize;
-        let base = base_y * self.cfg.stride + base_x;
+        let base = base_y * self.cfg.stride as usize + base_x;
         let width = (self.cfg.width as isize - x) as usize;
         base..base + width
     }
@@ -427,14 +419,14 @@ impl<T: Pixel> Plane<T> {
         debug_assert!(self.cfg.xorigin as isize + x >= 0);
         let base_y = (self.cfg.yorigin as isize + y) as usize;
         let base_x = (self.cfg.xorigin as isize + x) as usize;
-        let base = base_y * self.cfg.stride + base_x;
-        let width = self.cfg.stride - base_x;
+        let base = base_y * self.cfg.stride as usize + base_x;
+        let width = self.cfg.stride as usize - base_x;
         base..base + width
     }
 
     /// Returns the pixel at the given coordinates.
-    pub fn p(&self, x: usize, y: usize) -> T {
-        self.data[self.index(x, y)]
+    pub fn p(&self, x: u32, y: u32) -> T {
+        self.data[self.index(x as usize, y as usize)]
     }
 
     /// Returns plane data starting from the origin.
@@ -466,7 +458,7 @@ impl<T: Pixel> Plane<T> {
 
         for (self_row, source_row) in self
             .data_origin_mut()
-            .chunks_exact_mut(stride)
+            .chunks_exact_mut(stride as usize)
             .zip(source.chunks_exact(source_stride))
         {
             match source_bytewidth {
@@ -511,13 +503,14 @@ impl<T: Pixel> Plane<T> {
         let stride = self.cfg.stride;
         for (self_row, dest_row) in self
             .data_origin()
-            .chunks_exact(stride)
+            .chunks_exact(stride as usize)
             .zip(dest.chunks_exact_mut(dest_stride))
         {
             match dest_bytewidth {
                 1 => {
-                    for (self_pixel, dest_pixel) in
-                        self_row[..self.cfg.width].iter().zip(dest_row.iter_mut())
+                    for (self_pixel, dest_pixel) in self_row[..self.cfg.width as usize]
+                        .iter()
+                        .zip(dest_row.iter_mut())
                     {
                         *dest_pixel = u8::cast_from(*self_pixel);
                     }
@@ -538,7 +531,9 @@ impl<T: Pixel> Plane<T> {
                         )
                     };
 
-                    for (self_pixel, bytes) in self_row[..self.cfg.width].iter().zip(dest_row) {
+                    for (self_pixel, bytes) in
+                        self_row[..self.cfg.width as usize].iter().zip(dest_row)
+                    {
                         *bytes = u16::cast_from(*self_pixel).to_le_bytes();
                     }
                 }
@@ -555,7 +550,7 @@ impl<T: Pixel> Plane<T> {
     /// # Panics
     ///
     /// - If the requested width and height are > half the input width or height
-    pub fn downsampled(&self, frame_width: usize, frame_height: usize) -> Plane<T> {
+    pub fn downsampled(&self, frame_width: u32, frame_height: u32) -> Plane<T> {
         let src = self;
         // SAFETY: all pixels initialized in this function
         let mut new = unsafe {
@@ -569,22 +564,22 @@ impl<T: Pixel> Plane<T> {
             )
         };
 
-        let width = new.cfg.width;
-        let height = new.cfg.height;
+        let width = new.cfg.width as usize;
+        let height = new.cfg.height as usize;
+        let stride = src.cfg.stride as usize;
 
-        assert!(width * 2 <= src.cfg.stride - src.cfg.xorigin);
-        assert!(height * 2 <= src.cfg.alloc_height - src.cfg.yorigin);
+        assert!(width * 2 <= stride - src.cfg.xorigin as usize);
+        assert!(height * 2 <= src.cfg.alloc_height as usize - src.cfg.yorigin as usize);
 
         let data_origin = src.data_origin();
         for (row_idx, dst_row) in new
             .mut_slice(PlaneOffset::default())
             .rows_iter_mut()
             .enumerate()
-            .take(height)
+            .take(height as usize)
         {
-            let src_top_row = &data_origin[(src.cfg.stride * row_idx * 2)..][..(2 * width)];
-            let src_bottom_row =
-                &data_origin[(src.cfg.stride * (row_idx * 2 + 1))..][..(2 * width)];
+            let src_top_row = &data_origin[(stride * row_idx * 2)..][..(2 * width)];
+            let src_bottom_row = &data_origin[(stride * (row_idx * 2 + 1))..][..(2 * width)];
 
             for ((dst, a), b) in dst_row
                 .iter_mut()
@@ -605,7 +600,7 @@ impl<T: Pixel> Plane<T> {
     }
 
     /// Returns a plane downscaled from the source plane by a factor of `scale` (not padded)
-    pub fn downscale<const SCALE: usize>(&self) -> Plane<T> {
+    pub fn downscale<const SCALE: u32>(&self) -> Plane<T> {
         // SAFETY: all pixels initialized when `downscale_in_place` is called
         let mut new_plane = unsafe {
             Plane::new_uninitialized(self.cfg.width / SCALE, self.cfg.height / SCALE, 0, 0, 0, 0)
@@ -622,17 +617,17 @@ impl<T: Pixel> Plane<T> {
     ///
     /// - If the current plane's width and height are not at least `SCALE` times the `in_plane`'s
     #[profiling::function(downscale_in_place)]
-    pub fn downscale_in_place<const SCALE: usize>(&self, in_plane: &mut Plane<T>) {
-        let stride = in_plane.cfg.stride;
-        let width = in_plane.cfg.width;
-        let height = in_plane.cfg.height;
+    pub fn downscale_in_place<const SCALE: u32>(&self, in_plane: &mut Plane<T>) {
+        let stride = in_plane.cfg.stride as usize;
+        let width = in_plane.cfg.width as usize;
+        let height = in_plane.cfg.height as usize;
 
         if stride == 0 || self.cfg.stride == 0 {
             panic!("stride cannot be 0");
         }
 
-        assert!(width * SCALE <= self.cfg.stride - self.cfg.xorigin);
-        assert!(height * SCALE <= self.cfg.alloc_height - self.cfg.yorigin);
+        assert!(in_plane.cfg.width * SCALE <= self.cfg.stride - self.cfg.xorigin);
+        assert!(in_plane.cfg.height * SCALE <= self.cfg.alloc_height - self.cfg.yorigin);
 
         // SAFETY: Bounds checks have been removed for performance reasons
         unsafe {
@@ -655,19 +650,18 @@ impl<T: Pixel> Plane<T> {
 
                             // Iter src row
                             for y in 0..SCALE {
-                                let src_row_idx = row_idx * SCALE + y;
-                                let src_row =
-                                    data_origin.get_unchecked((src_row_idx * src.cfg.stride)..);
+                                let src_row_idx = row_idx * SCALE as usize + y as usize;
+                                let src_row = data_origin.get_unchecked((src_row_idx * stride)..);
 
                                 // Iter src col
                                 for x in 0..SCALE {
-                                    let src_col_idx = col_idx * SCALE + x;
+                                    let src_col_idx = col_idx * SCALE as usize + x as usize;
                                     sum += <$x>::cast_from(*src_row.get_unchecked(src_col_idx));
                                 }
                             }
 
                             // Box average
-                            let avg = sum as usize / box_pixels;
+                            let avg = sum as u32 / box_pixels;
                             *dst = T::cast_from(avg);
                         };
                     }
@@ -722,8 +716,8 @@ impl<T: Pixel> Plane<T> {
 #[derive(Debug)]
 pub struct PlaneIter<'a, T: Pixel> {
     plane: &'a Plane<T>,
-    y: usize,
-    x: usize,
+    y: u32,
+    x: u32,
 }
 
 impl<'a, T: Pixel> PlaneIter<'a, T> {
@@ -732,11 +726,11 @@ impl<'a, T: Pixel> PlaneIter<'a, T> {
         Self { plane, y: 0, x: 0 }
     }
 
-    fn width(&self) -> usize {
+    fn width(&self) -> u32 {
         self.plane.cfg.width
     }
 
-    fn height(&self) -> usize {
+    fn height(&self) -> u32 {
         self.plane.cfg.height
     }
 }
@@ -868,14 +862,14 @@ impl<'a, T: Pixel> PlaneSlice<'a, T> {
     pub fn p(&self, add_x: usize, add_y: usize) -> T {
         let new_y = (self.y + add_y as isize + self.plane.cfg.yorigin as isize) as usize;
         let new_x = (self.x + add_x as isize + self.plane.cfg.xorigin as isize) as usize;
-        self.plane.data[new_y * self.plane.cfg.stride + new_x]
+        self.plane.data[new_y * self.plane.cfg.stride as usize + new_x]
     }
 
     /// Checks if `add_y` and `add_x` lies in the allocated bounds of the
     /// underlying plane.
     pub fn accessible(&self, add_x: usize, add_y: usize) -> bool {
-        let y = (self.y + add_y as isize + self.plane.cfg.yorigin as isize) as usize;
-        let x = (self.x + add_x as isize + self.plane.cfg.xorigin as isize) as usize;
+        let y = (self.y + add_y as isize + self.plane.cfg.yorigin as isize) as u32;
+        let x = (self.x + add_x as isize + self.plane.cfg.xorigin as isize) as u32;
         y < self.plane.cfg.alloc_height && x < self.plane.cfg.stride
     }
 
@@ -891,7 +885,7 @@ impl<'a, T: Pixel> PlaneSlice<'a, T> {
     pub fn row_cropped(&self, y: usize) -> &[T] {
         let y = (self.y + y as isize + self.plane.cfg.yorigin as isize) as usize;
         let x = (self.x + self.plane.cfg.xorigin as isize) as usize;
-        let start = y * self.plane.cfg.stride + x;
+        let start = y * self.plane.cfg.stride as usize + x;
         let width = (self.plane.cfg.width as isize - self.x) as usize;
         &self.plane.data[start..start + width]
     }
@@ -900,8 +894,8 @@ impl<'a, T: Pixel> PlaneSlice<'a, T> {
     pub fn row(&self, y: usize) -> &[T] {
         let y = (self.y + y as isize + self.plane.cfg.yorigin as isize) as usize;
         let x = (self.x + self.plane.cfg.xorigin as isize) as usize;
-        let start = y * self.plane.cfg.stride + x;
-        let width = self.plane.cfg.stride - x;
+        let start = y * self.plane.cfg.stride as usize + x;
+        let width = self.plane.cfg.stride as usize - x;
         &self.plane.data[start..start + width]
     }
 }

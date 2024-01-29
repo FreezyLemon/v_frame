@@ -10,6 +10,7 @@
 use num_traits::PrimInt;
 use std::mem::size_of;
 
+// TODO: Implement this for u32
 pub trait Fixed {
     fn floor_log2(&self, n: usize) -> usize;
     fn ceil_log2(&self, n: usize) -> usize;
