@@ -31,11 +31,11 @@ pub struct PlaneConfig {
     /// Decimator along the X axis.
     ///
     /// For example, for chroma planes in a 4:2:0 configuration this would be 1.
-    pub xdec: u32,
+    pub xdec: u8,
     /// Decimator along the Y axis.
     ///
     /// For example, for chroma planes in a 4:2:0 configuration this would be 1.
-    pub ydec: u32,
+    pub ydec: u8,
     /// Number of padding pixels on the right.
     pub xpad: u32,
     /// Number of padding pixels on the bottom.
@@ -54,8 +54,8 @@ impl PlaneConfig {
     pub fn new(
         width: u32,
         height: u32,
-        xdec: u32,
-        ydec: u32,
+        xdec: u8,
+        ydec: u8,
         xpad: u32,
         ypad: u32,
         type_size: usize,
@@ -263,7 +263,7 @@ where
 
 impl<T: Pixel> Plane<T> {
     /// Allocates and returns a new plane.
-    pub fn new(width: u32, height: u32, xdec: u32, ydec: u32, xpad: u32, ypad: u32) -> Self {
+    pub fn new(width: u32, height: u32, xdec: u8, ydec: u8, xpad: u32, ypad: u32) -> Self {
         let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
         let data = PlaneData::new((cfg.stride * cfg.alloc_height()) as usize);
 
@@ -274,8 +274,8 @@ impl<T: Pixel> Plane<T> {
     unsafe fn new_uninitialized(
         width: u32,
         height: u32,
-        xdec: u32,
-        ydec: u32,
+        xdec: u8,
+        ydec: u8,
         xpad: u32,
         ypad: u32,
     ) -> Self {
@@ -315,8 +315,8 @@ impl<T: Pixel> Plane<T> {
         let yorigin = self.cfg.yorigin as usize;
         let stride = self.cfg.stride as usize;
         let alloc_height = self.cfg.alloc_height() as usize;
-        let width = ((w + self.cfg.xdec) >> self.cfg.xdec) as usize;
-        let height = ((h + self.cfg.ydec) >> self.cfg.ydec) as usize;
+        let width = ((w + self.cfg.xdec as u32) >> self.cfg.xdec as u32) as usize;
+        let height = ((h + self.cfg.ydec as u32) >> self.cfg.ydec as u32) as usize;
 
         if xorigin > 0 {
             for y in 0..height {
@@ -368,8 +368,8 @@ impl<T: Pixel> Plane<T> {
             ..
         } = self.cfg;
         let alloc_height = self.cfg.alloc_height();
-        let width = (w + xdec) >> xdec;
-        let height = (h + ydec) >> ydec;
+        let width = (w + xdec as u32) >> xdec;
+        let height = (h + ydec as u32) >> ydec;
         let corner = (yorigin + height - 1) * stride + xorigin + width - 1;
         let corner_value = self.data[corner as usize];
 
