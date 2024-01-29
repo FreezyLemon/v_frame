@@ -1002,17 +1002,20 @@ pub mod test {
     #[test]
     fn copy_from_raw_u8() {
         #[rustfmt::skip]
-    let mut plane = Plane::from_slice(&[0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 2, 3, 4, 0, 0,
-        0, 0, 8, 7, 6, 5, 0, 0,
-        0, 0, 9, 8, 7, 6, 0, 0,
-        0, 0, 2, 3, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0],
-      8,
-    );
+        let mut plane = Plane::from_slice(
+            &[
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 2, 3, 4, 0, 0,
+                0, 0, 8, 7, 6, 5, 0, 0,
+                0, 0, 9, 8, 7, 6, 0, 0,
+                0, 0, 2, 3, 4, 5, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0
+            ],
+            8,
+        );
 
         let input = vec![42u8; 64];
 
@@ -1026,17 +1029,20 @@ pub mod test {
     #[test]
     fn copy_to_raw_u8() {
         #[rustfmt::skip]
-    let plane = Plane::from_slice(&[0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 2, 3, 4, 0, 0,
-        0, 0, 8, 7, 6, 5, 0, 0,
-        0, 0, 9, 8, 7, 6, 0, 0,
-        0, 0, 2, 3, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0],
-      8,
-    );
+        let plane = Plane::from_slice(
+            &[
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 2, 3, 4, 0, 0,
+                0, 0, 8, 7, 6, 5, 0, 0,
+                0, 0, 9, 8, 7, 6, 0, 0,
+                0, 0, 2, 3, 4, 5, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0
+            ],
+            8,
+        );
 
         let mut output = vec![42u8; 64];
 
@@ -1050,37 +1056,37 @@ pub mod test {
     #[test]
     fn test_plane_downsample() {
         #[rustfmt::skip]
-    let plane = Plane::<u8> {
-      data: PlaneData::from_slice(&[
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 2, 3, 4, 0, 0,
-        0, 0, 8, 7, 6, 5, 0, 0,
-        0, 0, 9, 8, 7, 6, 0, 0,
-        0, 0, 2, 3, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-      ]),
-      cfg: PlaneConfig {
-        stride: 8,
-        width: 4,
-        height: 4,
-        xdec: 0,
-        ydec: 0,
-        xpad: 0,
-        ypad: 0,
-        xorigin: 2,
-        yorigin: 3,
-      },
-    };
+        let plane = Plane::<u8> {
+            data: PlaneData::from_slice(&[
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 2, 3, 4, 0, 0,
+                0, 0, 8, 7, 6, 5, 0, 0,
+                0, 0, 9, 8, 7, 6, 0, 0,
+                0, 0, 2, 3, 4, 5, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+            cfg: PlaneConfig {
+                stride: 8,
+                width: 4,
+                height: 4,
+                xdec: 0,
+                ydec: 0,
+                xpad: 2,
+                ypad: 2,
+                xorigin: 2,
+                yorigin: 3,
+            },
+        };
         let downsampled = plane.downsampled(4, 4);
 
         #[rustfmt::skip]
-    let expected = &[
-      5, 5,
-      6, 6,
-    ];
+        let expected = &[
+            5, 5,
+            6, 6,
+        ];
 
         let v: Vec<_> = downsampled.iter().collect();
 
@@ -1089,37 +1095,37 @@ pub mod test {
     #[test]
     fn test_plane_downsample_odd() {
         #[rustfmt::skip]
-    let plane = Plane::<u8> {
-      data: PlaneData::from_slice(&[
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 2, 3, 4, 0, 0,
-        0, 0, 8, 7, 6, 5, 0, 0,
-        0, 0, 9, 8, 7, 6, 0, 0,
-        0, 0, 2, 3, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-      ]),
-      cfg: PlaneConfig {
-        stride: 8,
-        width: 3,
-        height: 3,
-        xdec: 0,
-        ydec: 0,
-        xpad: 0,
-        ypad: 0,
-        xorigin: 2,
-        yorigin: 3,
-      },
-    };
+        let plane = Plane::<u8> {
+            data: PlaneData::from_slice(&[
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 2, 3, 4, 0, 0,
+                0, 0, 8, 7, 6, 5, 0, 0,
+                0, 0, 9, 8, 7, 6, 0, 0,
+                0, 0, 2, 3, 4, 5, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+            cfg: PlaneConfig {
+                stride: 8,
+                width: 3,
+                height: 3,
+                xdec: 0,
+                ydec: 0,
+                xpad: 2,
+                ypad: 2,
+                xorigin: 2,
+                yorigin: 3,
+            },
+        };
         let downsampled = plane.downsampled(3, 3);
 
         #[rustfmt::skip]
-    let expected = &[
-      5, 5,
-      6, 6,
-    ];
+        let expected = &[
+            5, 5,
+            6, 6,
+        ];
 
         let v: Vec<_> = downsampled.iter().collect();
         assert_eq!(&expected[..], &v[..]);
@@ -1128,37 +1134,37 @@ pub mod test {
     #[test]
     fn test_plane_downscale() {
         #[rustfmt::skip]
-    let plane = Plane::<u8> {
-      data: PlaneData::from_slice(&[
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 1, 4, 5, 0, 0,
-        0, 0, 2, 3, 6, 7, 0, 0,
-        0, 0, 8, 9, 7, 5, 0, 0,
-        0, 0, 9, 8, 3, 1, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-      ]),
-      cfg: PlaneConfig {
-        stride: 8,
-        width: 4,
-        height: 4,
-        xdec: 0,
-        ydec: 0,
-        xpad: 0,
-        ypad: 0,
-        xorigin: 2,
-        yorigin: 3,
-      },
-    };
+        let plane = Plane::<u8> {
+            data: PlaneData::from_slice(&[
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1, 4, 5, 0, 0,
+                0, 0, 2, 3, 6, 7, 0, 0,
+                0, 0, 8, 9, 7, 5, 0, 0,
+                0, 0, 9, 8, 3, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+            cfg: PlaneConfig {
+                stride: 8,
+                width: 4,
+                height: 4,
+                xdec: 0,
+                ydec: 0,
+                xpad: 2,
+                ypad: 2,
+                xorigin: 2,
+                yorigin: 3,
+            },
+        };
         let downscaled = plane.downscale::<2>();
 
         #[rustfmt::skip]
-    let expected = &[
-      2, 6,
-      9, 4
-    ];
+        let expected = &[
+            2, 6,
+            9, 4
+        ];
 
         let v: Vec<_> = downscaled.iter().collect();
         assert_eq!(&expected[..], &v[..]);
@@ -1167,36 +1173,36 @@ pub mod test {
     #[test]
     fn test_plane_downscale_odd() {
         #[rustfmt::skip]
-  let plane = Plane::<u8> {
-      data: PlaneData::from_slice(&[
-        1, 2, 3, 4, 1, 2, 3, 4,
-        0, 0, 8, 7, 6, 5, 8, 7,
-        6, 5, 8, 7, 6, 5, 8, 7,
-        6, 5, 8, 7, 0, 0, 2, 3,
-        4, 5, 0, 0, 9, 8, 7, 6,
-        0, 0, 0, 0, 2, 3, 4, 5,
-        0, 0, 0, 0, 2, 3, 4, 5,
-      ]),
-      cfg: PlaneConfig {
-        stride: 8,
-        width: 8,
-        height: 7,
-        xdec: 0,
-        ydec: 0,
-        xpad: 0,
-        ypad: 0,
-        xorigin: 0,
-        yorigin: 0,
-      },
-    };
+        let plane = Plane::<u8> {
+            data: PlaneData::from_slice(&[
+                1, 2, 3, 4, 1, 2, 3, 4,
+                0, 0, 8, 7, 6, 5, 8, 7,
+                6, 5, 8, 7, 6, 5, 8, 7,
+                6, 5, 8, 7, 0, 0, 2, 3,
+                4, 5, 0, 0, 9, 8, 7, 6,
+                0, 0, 0, 0, 2, 3, 4, 5,
+                0, 0, 0, 0, 2, 3, 4, 5,
+            ]),
+            cfg: PlaneConfig {
+                stride: 8,
+                width: 8,
+                height: 7,
+                xdec: 0,
+                ydec: 0,
+                xpad: 0,
+                ypad: 0,
+                xorigin: 0,
+                yorigin: 0,
+            },
+        };
 
         let downscaled = plane.downscale::<3>();
 
         #[rustfmt::skip]
-    let expected = &[
-      4, 5,
-      3, 3
-    ];
+        let expected = &[
+            4, 5,
+            3, 3
+        ];
 
         let v: Vec<_> = downscaled.iter().collect();
         assert_eq!(&expected[..], &v[..]);
@@ -1205,39 +1211,39 @@ pub mod test {
     #[test]
     fn test_plane_downscale_odd_2() {
         #[rustfmt::skip]
-    let plane = Plane::<u8> {
-      data: PlaneData::from_slice(&[
-        9, 8, 3, 1, 0, 1, 4, 5, 0, 0,
-        0, 1, 4, 5, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 9, 0,
-        0, 2, 3, 6, 7, 0, 0, 0, 0, 0,
-        0, 0, 8, 9, 7, 5, 0, 0, 0, 0,
-        9, 8, 3, 1, 0, 1, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 2, 3, 6, 7, 0,
-        0, 0, 0, 0, 0, 0, 8, 9, 7, 5,
-        0, 0, 0, 0, 9, 8, 3, 1, 0, 0
-      ]),
-      cfg: PlaneConfig {
-        stride: 10,
-        width: 10,
-        height: 10,
-        xdec: 0,
-        ydec: 0,
-        xpad: 0,
-        ypad: 0,
-        xorigin: 0,
-        yorigin: 0,
-      },
-    };
+        let plane = Plane::<u8> {
+            data: PlaneData::from_slice(&[
+                9, 8, 3, 1, 0, 1, 4, 5, 0, 0,
+                0, 1, 4, 5, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 9, 0,
+                0, 2, 3, 6, 7, 0, 0, 0, 0, 0,
+                0, 0, 8, 9, 7, 5, 0, 0, 0, 0,
+                9, 8, 3, 1, 0, 1, 4, 5, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 2, 3, 6, 7, 0,
+                0, 0, 0, 0, 0, 0, 8, 9, 7, 5,
+                0, 0, 0, 0, 9, 8, 3, 1, 0, 0
+            ]),
+            cfg: PlaneConfig {
+                stride: 10,
+                width: 10,
+                height: 10,
+                xdec: 0,
+                ydec: 0,
+                xpad: 0,
+                ypad: 0,
+                xorigin: 0,
+                yorigin: 0,
+            },
+        };
         let downscaled = plane.downscale::<3>();
 
         #[rustfmt::skip]
-    let expected = &[
-      3, 1, 2,
-      4, 4, 1,
-      0, 0, 4,
-    ];
+        let expected = &[
+            3, 1, 2,
+            4, 4, 1,
+            0, 0, 4,
+        ];
 
         let v: Vec<_> = downscaled.iter().collect();
         assert_eq!(&expected[..], &v[..]);
@@ -1246,76 +1252,76 @@ pub mod test {
     #[test]
     fn test_plane_pad() {
         #[rustfmt::skip]
-    let mut plane = Plane::<u8> {
-      data: PlaneData::from_slice(&[
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 2, 3, 4, 0, 0,
-        0, 0, 8, 7, 6, 5, 0, 0,
-        0, 0, 9, 8, 7, 6, 0, 0,
-        0, 0, 2, 3, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-      ]),
-      cfg: PlaneConfig {
-        stride: 8,
-        width: 4,
-        height: 4,
-        xdec: 0,
-        ydec: 0,
-        xpad: 0,
-        ypad: 0,
-        xorigin: 2,
-        yorigin: 3,
-      },
-    };
+        let mut plane = Plane::<u8> {
+            data: PlaneData::from_slice(&[
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 2, 3, 4, 0, 0,
+                0, 0, 8, 7, 6, 5, 0, 0,
+                0, 0, 9, 8, 7, 6, 0, 0,
+                0, 0, 2, 3, 4, 5, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+            cfg: PlaneConfig {
+                stride: 8,
+                width: 4,
+                height: 4,
+                xdec: 0,
+                ydec: 0,
+                xpad: 2,
+                ypad: 2,
+                xorigin: 2,
+                yorigin: 3,
+            },
+        };
         plane.pad(4, 4);
 
         #[rustfmt::skip]
-    assert_eq!(
-      &[
-        1, 1, 1, 2, 3, 4, 4, 4,
-        1, 1, 1, 2, 3, 4, 4, 4,
-        1, 1, 1, 2, 3, 4, 4, 4,
-        1, 1, 1, 2, 3, 4, 4, 4,
-        8, 8, 8, 7, 6, 5, 5, 5,
-        9, 9, 9, 8, 7, 6, 6, 6,
-        2, 2, 2, 3, 4, 5, 5, 5,
-        2, 2, 2, 3, 4, 5, 5, 5,
-        2, 2, 2, 3, 4, 5, 5, 5,
-      ][..],
-      &plane.data[..]
-    );
+        assert_eq!(
+            &[
+                1, 1, 1, 2, 3, 4, 4, 4,
+                1, 1, 1, 2, 3, 4, 4, 4,
+                1, 1, 1, 2, 3, 4, 4, 4,
+                1, 1, 1, 2, 3, 4, 4, 4,
+                8, 8, 8, 7, 6, 5, 5, 5,
+                9, 9, 9, 8, 7, 6, 6, 6,
+                2, 2, 2, 3, 4, 5, 5, 5,
+                2, 2, 2, 3, 4, 5, 5, 5,
+                2, 2, 2, 3, 4, 5, 5, 5,
+            ][..],
+            &plane.data[..]
+        );
     }
 
     #[test]
     fn test_pixel_iterator() {
         #[rustfmt::skip]
-    let plane = Plane::<u8> {
-      data: PlaneData::from_slice(&[
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 2, 3, 4, 0, 0,
-        0, 0, 8, 7, 6, 5, 0, 0,
-        0, 0, 9, 8, 7, 6, 0, 0,
-        0, 0, 2, 3, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-      ]),
-      cfg: PlaneConfig {
-        stride: 8,
-        width: 4,
-        height: 4,
-        xdec: 0,
-        ydec: 0,
-        xpad: 0,
-        ypad: 0,
-        xorigin: 2,
-        yorigin: 3,
-      },
-    };
+        let plane = Plane::<u8> {
+            data: PlaneData::from_slice(&[
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 2, 3, 4, 0, 0,
+                0, 0, 8, 7, 6, 5, 0, 0,
+                0, 0, 9, 8, 7, 6, 0, 0,
+                0, 0, 2, 3, 4, 5, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+            cfg: PlaneConfig {
+                stride: 8,
+                width: 4,
+                height: 4,
+                xdec: 0,
+                ydec: 0,
+                xpad: 0,
+                ypad: 0,
+                xorigin: 2,
+                yorigin: 3,
+            },
+        };
 
         let pixels: Vec<u8> = plane.iter().collect();
 
