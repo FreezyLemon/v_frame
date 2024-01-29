@@ -24,8 +24,6 @@ use crate::serialize::{Deserialize, Serialize};
 pub struct PlaneConfig {
     /// Data stride.
     pub stride: u32,
-    /// Allocated height in pixels.
-    pub alloc_height: u32,
     /// Width in pixels.
     pub width: u32,
     /// Height in pixels.
@@ -69,11 +67,9 @@ impl PlaneConfig {
         let stride = ((xorigin + width + xpad) as usize)
             .align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size)
             as u32;
-        let alloc_height = yorigin + height + ypad;
 
         PlaneConfig {
             stride,
-            alloc_height,
             width,
             height,
             xdec,
@@ -83,6 +79,11 @@ impl PlaneConfig {
             xorigin,
             yorigin,
         }
+    }
+
+    #[inline]
+    pub const fn alloc_height(&self) -> u32 {
+        self.yorigin + self.height + self.ypad
     }
 }
 
@@ -264,7 +265,7 @@ impl<T: Pixel> Plane<T> {
     /// Allocates and returns a new plane.
     pub fn new(width: u32, height: u32, xdec: u32, ydec: u32, xpad: u32, ypad: u32) -> Self {
         let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
-        let data = PlaneData::new((cfg.stride * cfg.alloc_height) as usize);
+        let data = PlaneData::new((cfg.stride * cfg.alloc_height()) as usize);
 
         Plane { data, cfg }
     }
@@ -279,7 +280,7 @@ impl<T: Pixel> Plane<T> {
         ypad: u32,
     ) -> Self {
         let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
-        let data = PlaneData::new_uninitialized((cfg.stride * cfg.alloc_height) as usize);
+        let data = PlaneData::new_uninitialized((cfg.stride * cfg.alloc_height()) as usize);
 
         Plane { data, cfg }
     }
@@ -296,7 +297,6 @@ impl<T: Pixel> Plane<T> {
             data: PlaneData::from_slice(data),
             cfg: PlaneConfig {
                 stride,
-                alloc_height: len / stride,
                 width: stride,
                 height: len / stride,
                 xdec: 0,
@@ -314,7 +314,7 @@ impl<T: Pixel> Plane<T> {
         let xorigin = self.cfg.xorigin as usize;
         let yorigin = self.cfg.yorigin as usize;
         let stride = self.cfg.stride as usize;
-        let alloc_height = self.cfg.alloc_height as usize;
+        let alloc_height = self.cfg.alloc_height() as usize;
         let width = ((w + self.cfg.xdec) >> self.cfg.xdec) as usize;
         let height = ((h + self.cfg.ydec) >> self.cfg.ydec) as usize;
 
@@ -363,11 +363,11 @@ impl<T: Pixel> Plane<T> {
             xorigin,
             yorigin,
             stride,
-            alloc_height,
             xdec,
             ydec,
             ..
         } = self.cfg;
+        let alloc_height = self.cfg.alloc_height();
         let width = (w + xdec) >> xdec;
         let height = (h + ydec) >> ydec;
         let corner = (yorigin + height - 1) * stride + xorigin + width - 1;
@@ -569,14 +569,14 @@ impl<T: Pixel> Plane<T> {
         let stride = src.cfg.stride as usize;
 
         assert!(width * 2 <= stride - src.cfg.xorigin as usize);
-        assert!(height * 2 <= src.cfg.alloc_height as usize - src.cfg.yorigin as usize);
+        assert!(height * 2 <= src.cfg.alloc_height() as usize - src.cfg.yorigin as usize);
 
         let data_origin = src.data_origin();
         for (row_idx, dst_row) in new
             .mut_slice(PlaneOffset::default())
             .rows_iter_mut()
             .enumerate()
-            .take(height as usize)
+            .take(height)
         {
             let src_top_row = &data_origin[(stride * row_idx * 2)..][..(2 * width)];
             let src_bottom_row = &data_origin[(stride * (row_idx * 2 + 1))..][..(2 * width)];
@@ -627,13 +627,13 @@ impl<T: Pixel> Plane<T> {
         }
 
         assert!(in_plane.cfg.width * SCALE <= self.cfg.stride - self.cfg.xorigin);
-        assert!(in_plane.cfg.height * SCALE <= self.cfg.alloc_height - self.cfg.yorigin);
+        assert!(in_plane.cfg.height * SCALE <= self.cfg.alloc_height() - self.cfg.yorigin);
 
         // SAFETY: Bounds checks have been removed for performance reasons
         unsafe {
             let src = self;
             let box_pixels = SCALE * SCALE;
-            let half_box_pixels = box_pixels as u32 / 2; // Used for rounding int division
+            let half_box_pixels = box_pixels / 2; // Used for rounding int division
 
             let data_origin = src.data_origin();
             let plane_data_mut_slice = &mut *in_plane.data;
@@ -870,7 +870,7 @@ impl<'a, T: Pixel> PlaneSlice<'a, T> {
     pub fn accessible(&self, add_x: usize, add_y: usize) -> bool {
         let y = (self.y + add_y as isize + self.plane.cfg.yorigin as isize) as u32;
         let x = (self.x + add_x as isize + self.plane.cfg.xorigin as isize) as u32;
-        y < self.plane.cfg.alloc_height && x < self.plane.cfg.stride
+        y < self.plane.cfg.alloc_height() && x < self.plane.cfg.stride
     }
 
     /// Checks if -`sub_x` and -`sub_y` lies in the allocated bounds of the
@@ -1064,7 +1064,6 @@ pub mod test {
       ]),
       cfg: PlaneConfig {
         stride: 8,
-        alloc_height: 9,
         width: 4,
         height: 4,
         xdec: 0,
@@ -1104,7 +1103,6 @@ pub mod test {
       ]),
       cfg: PlaneConfig {
         stride: 8,
-        alloc_height: 9,
         width: 3,
         height: 3,
         xdec: 0,
@@ -1144,7 +1142,6 @@ pub mod test {
       ]),
       cfg: PlaneConfig {
         stride: 8,
-        alloc_height: 9,
         width: 4,
         height: 4,
         xdec: 0,
@@ -1182,7 +1179,6 @@ pub mod test {
       ]),
       cfg: PlaneConfig {
         stride: 8,
-        alloc_height: 7,
         width: 8,
         height: 7,
         xdec: 0,
@@ -1224,7 +1220,6 @@ pub mod test {
       ]),
       cfg: PlaneConfig {
         stride: 10,
-        alloc_height: 10,
         width: 10,
         height: 10,
         xdec: 0,
@@ -1265,7 +1260,6 @@ pub mod test {
       ]),
       cfg: PlaneConfig {
         stride: 8,
-        alloc_height: 9,
         width: 4,
         height: 4,
         xdec: 0,
@@ -1312,7 +1306,6 @@ pub mod test {
       ]),
       cfg: PlaneConfig {
         stride: 8,
-        alloc_height: 9,
         width: 4,
         height: 4,
         xdec: 0,
