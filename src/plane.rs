@@ -37,13 +37,13 @@ pub struct PlaneConfig {
     /// For example, for chroma planes in a 4:2:0 configuration this would be 1.
     pub ydec: u8,
     /// Number of padding pixels on the right.
-    pub xpad: u32,
+    pub xpad: u16,
     /// Number of padding pixels on the bottom.
-    pub ypad: u32,
+    pub ypad: u16,
     /// X where the data starts.
-    pub xorigin: u32,
+    pub xorigin: u16,
     /// Y where the data starts.
-    pub yorigin: u32,
+    pub yorigin: u16,
 }
 
 impl PlaneConfig {
@@ -56,15 +56,15 @@ impl PlaneConfig {
         height: u32,
         xdec: u8,
         ydec: u8,
-        xpad: u32,
-        ypad: u32,
+        xpad: u16,
+        ypad: u16,
         type_size: usize,
     ) -> Self {
         // FIXME: Update this weird usize/u32 casting
         let xorigin =
-            (xpad as usize).align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size) as u32;
+            u16::try_from((xpad as usize).align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size)).expect("xorigin fits into u16");
         let yorigin = ypad;
-        let stride = ((xorigin + width + xpad) as usize)
+        let stride = (xorigin as usize + width as usize + xpad as usize)
             .align_power_of_two(Self::STRIDE_ALIGNMENT_LOG2 + 1 - type_size)
             as u32;
 
@@ -83,7 +83,7 @@ impl PlaneConfig {
 
     #[inline]
     pub const fn alloc_height(&self) -> u32 {
-        self.yorigin + self.height + self.ypad
+        self.yorigin as u32 + self.height + self.ypad as u32
     }
 }
 
@@ -263,7 +263,7 @@ where
 
 impl<T: Pixel> Plane<T> {
     /// Allocates and returns a new plane.
-    pub fn new(width: u32, height: u32, xdec: u8, ydec: u8, xpad: u32, ypad: u32) -> Self {
+    pub fn new(width: u32, height: u32, xdec: u8, ydec: u8, xpad: u16, ypad: u16) -> Self {
         let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
         let data = PlaneData::new((cfg.stride * cfg.alloc_height()) as usize);
 
@@ -276,8 +276,8 @@ impl<T: Pixel> Plane<T> {
         height: u32,
         xdec: u8,
         ydec: u8,
-        xpad: u32,
-        ypad: u32,
+        xpad: u16,
+        ypad: u16,
     ) -> Self {
         let cfg = PlaneConfig::new(width, height, xdec, ydec, xpad, ypad, mem::size_of::<T>());
         let data = PlaneData::new_uninitialized((cfg.stride * cfg.alloc_height()) as usize);
@@ -370,6 +370,8 @@ impl<T: Pixel> Plane<T> {
         let alloc_height = self.cfg.alloc_height();
         let width = (w + xdec as u32) >> xdec;
         let height = (h + ydec as u32) >> ydec;
+        let xorigin = xorigin as u32;
+        let yorigin = yorigin as u32;
         let corner = (yorigin + height - 1) * stride + xorigin + width - 1;
         let corner_value = self.data[corner as usize];
 
@@ -626,8 +628,8 @@ impl<T: Pixel> Plane<T> {
             panic!("stride cannot be 0");
         }
 
-        assert!(in_plane.cfg.width * SCALE <= self.cfg.stride - self.cfg.xorigin);
-        assert!(in_plane.cfg.height * SCALE <= self.cfg.alloc_height() - self.cfg.yorigin);
+        assert!(in_plane.cfg.width * SCALE <= self.cfg.stride - self.cfg.xorigin as u32);
+        assert!(in_plane.cfg.height * SCALE <= self.cfg.alloc_height() - self.cfg.yorigin as u32);
 
         // SAFETY: Bounds checks have been removed for performance reasons
         unsafe {
