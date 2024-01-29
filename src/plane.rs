@@ -651,7 +651,7 @@ impl<T: Pixel> Plane<T> {
                             // Iter src row
                             for y in 0..SCALE {
                                 let src_row_idx = row_idx * SCALE as usize + y as usize;
-                                let src_row = data_origin.get_unchecked((src_row_idx * stride)..);
+                                let src_row = data_origin.get_unchecked((src_row_idx * src.cfg.stride as usize)..);
 
                                 // Iter src col
                                 for x in 0..SCALE {
