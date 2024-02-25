@@ -9,21 +9,80 @@ on:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
-  GRCOV_VERSION: v0.8.19
+  RUSTFLAGS: "-Dwarnings"
+  GRCOV_VERSION: "v0.8.19"
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  clippy-rustfmt:
+    runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v4
+      - name: Install Rust stable with clippy and rustfmt
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Check for clippy lints
+        run: cargo clippy --all-targets --all-features
+
+  run-tests:
+    runs-on: ubuntu-22.04
+    needs: clippy-rustfmt
+
+    strategy:
+      matrix:
+        feature-flag:
+          - ""
+          - "-F serialize"
+          - "-F tracing"
+          - "-F serialize, tracing"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run tests
+        run: cargo test ${{ matrix.feature-flag }}
+
+  run-tests-wasm:
+    runs-on: ubuntu-22.04
+    needs: clippy-rustfmt
+
+    strategy:
+      matrix:
+        feature-flag:
+          - ""
+          - "-F serialize"
+          - "-F tracing"
+          - "-F serialize, tracing"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable with wasm target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      # Chrome and Firefox come preinstalled on the runner images
+      - name: Run tests
+        run: >
+          wasm-pack test
+          --headless --chrome --firefox
+          -F wasm
+          ${{ matrix.feature-flag }}
 
   miri:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    needs: clippy-rustfmt
 
     steps:
     - uses: actions/checkout@v4
@@ -40,8 +99,8 @@ jobs:
       run: cargo miri test
 
   code-coverage:
-    needs: [miri, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    needs: run-tests
 
     steps:
     - uses: actions/checkout@v4
@@ -55,9 +114,6 @@ jobs:
       run: |
         curl -L "https://github.com/mozilla/grcov/releases/download/$GRCOV_VERSION/grcov-x86_64-unknown-linux-musl.tar.bz2" | \
         tar xj -C "$HOME/.cargo/bin"
-
-    - name: Run cargo clean
-      run: cargo clean
 
     - name: Run tests
       env:
