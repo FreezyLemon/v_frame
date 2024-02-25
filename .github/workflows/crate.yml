@@ -39,7 +39,7 @@ jobs:
           - ""
           - "-F serialize"
           - "-F tracing"
-          - "-F serialize, tracing"
+          - "-F serialize,tracing"
 
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
           - ""
           - "-F serialize"
           - "-F tracing"
-          - "-F serialize, tracing"
+          - "-F serialize,tracing"
 
     steps:
       - uses: actions/checkout@v4
