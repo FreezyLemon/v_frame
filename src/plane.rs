@@ -11,6 +11,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::iter::{self, FusedIterator};
 use std::marker::PhantomData;
 use std::mem::size_of;
+use std::num::NonZeroUsize;
 use std::ops::{Index, IndexMut, Range};
 
 use aligned_vec::{ABox, AVec, ConstAlign};
@@ -171,6 +172,57 @@ where
             "Plane {{ data: [{}, ...], cfg: {:?} }}",
             self.data[0], self.cfg
         )
+    }
+}
+
+impl Plane<u8> {
+    /// Copies data into the plane from a pixel array.
+    pub fn copy_from_raw_u8(&mut self, source: &[u8], source_stride: NonZeroUsize) {
+        let stride = self.cfg.stride;
+        for (self_row, source_row) in self
+            .data_origin_mut()
+            .chunks_exact_mut(stride)
+            .zip(source.chunks_exact(source_stride.get()))
+        {
+            for (self_pixel, source_pixel) in self_row.iter_mut().zip(source_row) {
+                *self_pixel = *source_pixel;
+            }
+        }
+    }
+}
+
+impl Plane<u16> {
+    /// Copies data into the plane from a pixel array.
+    ///
+    /// # Panics
+    ///
+    /// - If `source_bytewidth` is zero or larger than 2.
+    pub fn copy_from_raw_u8(
+        &mut self,
+        source: &[u8],
+        source_stride: NonZeroUsize,
+        source_bytewidth: usize,
+    ) {
+        assert!((0..3).contains(&source_bytewidth));
+
+        let stride = self.cfg.stride;
+        for (self_row, source_row) in self
+            .data_origin_mut()
+            .chunks_exact_mut(stride)
+            .zip(source.chunks_exact(source_stride.get()))
+        {
+            if source_bytewidth == 1 {
+                for (self_pixel, source_pixel) in self_row.iter_mut().zip(source_row) {
+                    *self_pixel = u16::cast_from(*source_pixel);
+                }
+            } else if source_bytewidth == 2 {
+                for (self_pixel, source_bytes) in
+                    self_row.iter_mut().zip(source_row.chunks_exact(2))
+                {
+                    *self_pixel = u16::from_le_bytes(source_bytes.try_into().unwrap());
+                }
+            }
+        }
     }
 }
 
@@ -342,60 +394,6 @@ impl<T: Pixel> Plane<T> {
     pub fn data_origin_mut(&mut self) -> &mut [T] {
         let i = self.index(0, 0);
         &mut self.data[i..]
-    }
-
-    /// Copies data into the plane from a pixel array.
-    ///
-    /// # Panics
-    ///
-    /// - If `source_bytewidth` does not match the generic `T` of `Plane`
-    pub fn copy_from_raw_u8(
-        &mut self,
-        source: &[u8],
-        source_stride: usize,
-        source_bytewidth: usize,
-    ) {
-        let stride = self.cfg.stride;
-
-        assert!(stride != 0);
-        assert!(source_stride != 0);
-
-        for (self_row, source_row) in self
-            .data_origin_mut()
-            .chunks_exact_mut(stride)
-            .zip(source.chunks_exact(source_stride))
-        {
-            match source_bytewidth {
-                1 => {
-                    for (self_pixel, source_pixel) in self_row.iter_mut().zip(source_row.iter()) {
-                        *self_pixel = T::cast_from(*source_pixel);
-                    }
-                }
-                2 => {
-                    assert!(
-                        size_of::<T>() == 2,
-                        "source bytewidth ({}) cannot fit in Plane<u8>",
-                        source_bytewidth
-                    );
-
-                    debug_assert!(T::type_enum() == PixelType::U16);
-
-                    // SAFETY: because of the assert it is safe to assume that T == u16
-                    let self_row: &mut [u16] = unsafe { std::mem::transmute(self_row) };
-                    // SAFETY: we reinterpret the slice of bytes as a slice of elements of
-                    // [u8; 2] to allow for more efficient codegen with from_le_bytes
-                    let source_row: &[[u8; 2]] = unsafe {
-                        std::slice::from_raw_parts(source_row.as_ptr().cast(), source_row.len() / 2)
-                    };
-
-                    for (self_pixel, bytes) in self_row.iter_mut().zip(source_row) {
-                        *self_pixel = u16::from_le_bytes(*bytes);
-                    }
-                }
-
-                _ => {}
-            }
-        }
     }
 
     /// Copies data from a plane into a pixel array.
@@ -905,21 +903,21 @@ pub mod test {
     #[test]
     fn copy_from_raw_u8() {
         #[rustfmt::skip]
-    let mut plane = Plane::from_slice(&[0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 2, 3, 4, 0, 0,
-        0, 0, 8, 7, 6, 5, 0, 0,
-        0, 0, 9, 8, 7, 6, 0, 0,
-        0, 0, 2, 3, 4, 5, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0],
-      8,
-    );
+        let mut plane = Plane::<u8>::from_slice(&[
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 2, 3, 4, 0, 0,
+            0, 0, 8, 7, 6, 5, 0, 0,
+            0, 0, 9, 8, 7, 6, 0, 0,
+            0, 0, 2, 3, 4, 5, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+        ], 8);
 
         let input = vec![42u8; 64];
 
-        plane.copy_from_raw_u8(&input, 8, 1);
+        plane.copy_from_raw_u8(&input, NonZeroUsize::new(8).unwrap());
 
         println!("{:?}", &plane.data[..10]);
 

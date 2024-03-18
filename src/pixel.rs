@@ -8,7 +8,7 @@
 // PATENTS file, you can obtain it at www.aomedia.org/license/patent.
 
 #[cfg(feature = "serialize")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 use wasm_bindgen::prelude::*;
@@ -255,8 +255,10 @@ mod test {
             assert_eq!(chroma_sampling, converted);
 
             let converted_uint = ChromaSampling::from_u32(int as u32);
-            assert_eq!(chroma_sampling, converted_uint, "FromPrimitive does not return the same result for i32 and u32");
+            assert_eq!(
+                chroma_sampling, converted_uint,
+                "FromPrimitive does not return the same result for i32 and u32"
+            );
         }
     }
 }
-

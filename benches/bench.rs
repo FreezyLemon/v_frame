@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use v_frame::frame::Frame;
 use v_frame::pixel::{CastFromPrimitive, ChromaSampling};
@@ -80,7 +82,12 @@ fn plane(c: &mut Criterion) {
     c.bench_function("plane copy_from_raw_u8 8-bit", |b| {
         b.iter_batched_ref(
             || p8b.clone(),
-            |p| p.copy_from_raw_u8(black_box(&data_8b), black_box(640), black_box(1)),
+            |p| {
+                p.copy_from_raw_u8(
+                    black_box(&data_8b),
+                    black_box(NonZeroUsize::new(640).unwrap()),
+                )
+            },
             batch_size,
         )
     });
@@ -97,7 +104,13 @@ fn plane(c: &mut Criterion) {
     c.bench_function("plane copy_from_raw_u8 10-bit", |b| {
         b.iter_batched_ref(
             || p10b.clone(),
-            |p| p.copy_from_raw_u8(black_box(&data_10b), black_box(640), black_box(2)),
+            |p| {
+                p.copy_from_raw_u8(
+                    black_box(&data_10b),
+                    black_box(NonZeroUsize::new(640).unwrap()),
+                    black_box(2),
+                )
+            },
             batch_size,
         )
     });
