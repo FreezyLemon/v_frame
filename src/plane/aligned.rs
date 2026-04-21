@@ -1,10 +1,12 @@
-use std::alloc::{Layout, alloc, alloc_zeroed, dealloc, handle_alloc_error};
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::mem::{ManuallyDrop, MaybeUninit};
-use std::num::NonZeroUsize;
-use std::ops::{Deref, DerefMut};
-use std::ptr::NonNull;
+use alloc::alloc::{alloc, alloc_zeroed, dealloc, handle_alloc_error};
+
+use core::alloc::Layout;
+use core::fmt::{self, Debug};
+use core::marker::PhantomData;
+use core::mem::{ManuallyDrop, MaybeUninit};
+use core::num::NonZeroUsize;
+use core::ops::{Deref, DerefMut};
+use core::ptr::NonNull;
 
 use crate::pixel::Pixel;
 
@@ -140,7 +142,7 @@ impl<T: PartialEq<U>, U> PartialEq<AlignedData<U>> for AlignedData<T> {
 impl<T: Eq> Eq for AlignedData<T> {}
 
 impl<T: Debug> Debug for AlignedData<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.len() > 5 {
             f.debug_list().entries(&self[..5]).finish_non_exhaustive()
         } else {
@@ -200,6 +202,10 @@ impl<T> Drop for AlignedData<T> {
 mod tests {
     use super::*;
 
+    use alloc::format;
+    use alloc::vec::Vec;
+    use alloc::string::String;
+
     #[test]
     fn empty() {
         AlignedData::<u8>::new(0);
@@ -252,7 +258,7 @@ mod tests {
 
         // SAFETY: Initialized above.
         let data = unsafe { data.assume_init() };
-        println!("{:?}", &data[100..140]);
+        let _ = format!("{:?}", &data[100..140]);
     }
 
     #[test]
@@ -264,7 +270,7 @@ mod tests {
 
         // SAFETY: Initialized above.
         let data = unsafe { data.assume_init() };
-        println!("{:?}", &*data);
+        let _ = format!("{:?}", &*data);
     }
 
     #[test]
@@ -339,6 +345,6 @@ mod tests {
         let data = unsafe { data.assume_init() };
         let data2 = data.clone();
         drop(data);
-        println!("{:?}", &*data2);
+        let _ = format!("{:?}", &*data2);
     }
 }

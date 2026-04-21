@@ -12,6 +12,8 @@
 use super::*;
 use crate::chroma::ChromaSubsampling;
 
+use alloc::format;
+
 #[test]
 fn plane_access() {
     let width = NonZeroUsize::new(1920).unwrap();

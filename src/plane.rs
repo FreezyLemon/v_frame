@@ -34,8 +34,8 @@
 mod tests;
 
 #[cfg(feature = "padding_api")]
-use std::mem::MaybeUninit;
-use std::num::{NonZeroU8, NonZeroUsize};
+use core::mem::MaybeUninit;
+use core::num::{NonZeroU8, NonZeroUsize};
 
 mod aligned;
 use aligned::AlignedData;

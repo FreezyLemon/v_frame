@@ -89,7 +89,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::num::{NonZeroU8, NonZeroUsize};
+use core::num::{NonZeroU8, NonZeroUsize};
 
 use crate::{
     chroma::ChromaSubsampling,
