@@ -13,7 +13,7 @@
 //! handling various error conditions related to frame processing, data validation,
 //! and format compatibility.
 
-use std::fmt;
+use core::fmt;
 
 /// The error type for `v_frame` operations.
 ///
@@ -90,4 +90,4 @@ impl fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}

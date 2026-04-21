@@ -33,6 +33,10 @@
 //!     .unwrap();
 //! ```
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
 pub mod chroma;
 pub mod error;
 pub mod frame;
