@@ -13,7 +13,9 @@ include = ["Cargo.toml", "README.md", "LICENSE", "src"]
 num-traits = "0.2.19"
 
 [features]
+default = ["std"]
 padding_api = []
+std = []
 
 [dev-dependencies.criterion]
 version = "0.8"

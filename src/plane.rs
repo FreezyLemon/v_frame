@@ -37,8 +37,8 @@ pub use error::CopyError;
 mod tests;
 
 #[cfg(feature = "padding_api")]
-use std::mem::MaybeUninit;
-use std::num::NonZeroUsize;
+use core::mem::MaybeUninit;
+use core::num::NonZeroUsize;
 
 mod aligned;
 use aligned::AlignedData;
