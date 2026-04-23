@@ -256,13 +256,13 @@ fn copy_from_slice_wrong_length() {
     // Too short
     let data = vec![1, 2, 3];
     let result = plane.copy_from_slice(&data);
-    assert!(matches!(result, Err(Error::DataLength { .. })));
+    assert!(matches!(result, Err(CopyError::DataLength { .. })));
     assert!(format!("{}", result.unwrap_err()).starts_with("data length mismatch,"));
 
     // Too long
     let data = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
     let result = plane.copy_from_slice(&data);
-    assert!(matches!(result, Err(Error::DataLength { .. })));
+    assert!(matches!(result, Err(CopyError::DataLength { .. })));
 }
 
 #[test]
@@ -300,7 +300,7 @@ fn copy_from_u8_slice_wrong_length() {
     // Should need 8 bytes (4 pixels * 2 bytes each)
     let data = vec![1, 2, 3, 4]; // Only 4 bytes
     let result = plane.copy_from_u8_slice(&data);
-    assert!(matches!(result, Err(Error::DataLength { .. })));
+    assert!(matches!(result, Err(CopyError::DataLength { .. })));
 }
 
 #[test]
@@ -538,7 +538,7 @@ fn copy_from_u8_slice_with_stride_invalid_stride() {
     let stride = NonZeroUsize::new(4).unwrap();
 
     let result = plane.copy_from_u8_slice_with_stride(&data, stride);
-    assert!(matches!(result, Err(Error::InvalidStride { .. })));
+    assert!(matches!(result, Err(CopyError::InvalidStride { .. })));
     assert!(format!("{}", result.unwrap_err()).starts_with("provided stride"));
 }
 
@@ -552,7 +552,7 @@ fn copy_from_u8_slice_with_stride_wrong_length() {
     let stride = NonZeroUsize::new(3).unwrap();
 
     let result = plane.copy_from_u8_slice_with_stride(&data, stride);
-    assert!(matches!(result, Err(Error::DataLength { .. })));
+    assert!(matches!(result, Err(CopyError::DataLength { .. })));
 
     // u16 case: should need stride * height * 2 bytes
     let geometry = simple_geometry(2, 2);
@@ -563,7 +563,7 @@ fn copy_from_u8_slice_with_stride_wrong_length() {
     let stride = NonZeroUsize::new(6).unwrap();
 
     let result = plane.copy_from_u8_slice_with_stride(&data, stride);
-    assert!(matches!(result, Err(Error::DataLength { .. })));
+    assert!(matches!(result, Err(CopyError::DataLength { .. })));
 }
 
 #[test]
