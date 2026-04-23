@@ -86,6 +86,9 @@
 //! .build::<u16>().unwrap();
 //! ```
 
+mod error;
+pub use error::BuildError;
+
 #[cfg(test)]
 mod tests;
 
@@ -93,7 +96,6 @@ use std::num::{NonZeroU8, NonZeroUsize};
 
 use crate::{
     chroma::ChromaSubsampling,
-    error::Error,
     pixel::Pixel,
     plane::{Plane, PlaneGeometry},
 };
@@ -254,15 +256,15 @@ impl FrameBuilder {
     /// Constructs a `Frame` from the current builder.
     ///
     /// # Errors
-    /// - Returns `Error::UnsupportedBitDepth` if the input bit depth is unsupported
+    /// - Returns `BuildError::UnsupportedBitDepth` if the input bit depth is unsupported
     ///   (currently 8-16 bit inputs are supported)
-    /// - Returns `Error::DataTypeMismatch` if the size of `T` does not match the input bit depth
-    /// - Returns `Error::UnsupportedResolution` if the resolution or padding dimensions
+    /// - Returns `BuildError::DataTypeMismatch` if the size of `T` does not match the input bit depth
+    /// - Returns `BuildError::UnsupportedResolution` if the resolution or padding dimensions
     ///   do not support the requested subsampling
     #[inline]
-    pub fn build<T: Pixel>(self) -> Result<Frame<T>, Error> {
+    pub fn build<T: Pixel>(self) -> Result<Frame<T>, BuildError> {
         if self.bit_depth.get() < 8 || self.bit_depth.get() > 16 {
-            return Err(Error::UnsupportedBitDepth {
+            return Err(BuildError::UnsupportedBitDepth {
                 found: self.bit_depth.get(),
             });
         }
@@ -275,7 +277,7 @@ impl FrameBuilder {
         if (byte_width == 1 && self.bit_depth.get() != 8)
             || (byte_width == 2 && self.bit_depth.get() <= 8)
         {
-            return Err(Error::DataTypeMismatch);
+            return Err(BuildError::DataTypeMismatch);
         }
 
         let luma_stride = self
@@ -307,7 +309,7 @@ impl FrameBuilder {
             .subsampling
             .chroma_dimensions(self.width.get(), self.height.get())
         else {
-            return Err(Error::UnsupportedResolution);
+            return Err(BuildError::UnsupportedResolution);
         };
 
         let (ss_x, ss_y) = self.subsampling.subsample_ratio().expect("not monochrome");
@@ -316,7 +318,7 @@ impl FrameBuilder {
             || self.luma_padding_top % ss_y.get() as usize > 0
             || self.luma_padding_bottom % ss_y.get() as usize > 0
         {
-            return Err(Error::UnsupportedResolution);
+            return Err(BuildError::UnsupportedResolution);
         }
         let chroma_padding_left = self.luma_padding_left / ss_x.get() as usize;
         let chroma_padding_right = self.luma_padding_right / ss_x.get() as usize;
