@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main"]
 
+env:
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-Dwarnings"
+
 jobs:
   format:
     runs-on: ubuntu-latest
@@ -25,10 +29,14 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Run clippy (no_std)
+        run: cargo clippy --all-targets --no-default-features
+      - name: Run clippy (no_std + padding_api)
+        run: cargo clippy --all-targets --no-default-features --features padding_api
       - name: Run clippy (default features)
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets
       - name: Run clippy (padding_api feature)
-        run: cargo clippy --all-targets --features padding_api -- -D warnings
+        run: cargo clippy --all-targets --features padding_api
 
   test:
     runs-on: ubuntu-latest
@@ -40,6 +48,17 @@ jobs:
         run: cargo test --all-targets
       - name: Run tests (padding_api feature)
         run: cargo test --all-targets --features padding_api
+
+  no_std:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests (no_std)
+        run: cargo test --all-targets --no-default-features
+      - name: Run tests (no_std + padding_api)
+        run: cargo test --all-targets --no-default-features --features padding_api
 
   msrv:
     runs-on: ubuntu-latest
