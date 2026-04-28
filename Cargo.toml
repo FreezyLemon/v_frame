@@ -14,10 +14,8 @@ num-traits = "0.2.19"
 [features]
 padding_api = []
 
-[dev-dependencies.criterion]
-version = "0.8"
-default-features = false
-features = ["plotters", "cargo_bench_support"]
+[dev-dependencies]
+divan = "0.1"
 
 #
 # WebAssembly/wasm32 target support below

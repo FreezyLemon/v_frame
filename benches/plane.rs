@@ -3,7 +3,7 @@
 #![allow(missing_docs, reason = "benchmark file")]
 #![allow(clippy::unwrap_used, reason = "benchmark file")]
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use divan::Bencher;
 use std::hint::black_box;
 use v_frame::{chroma::ChromaSubsampling, frame::FrameBuilder, plane::Plane};
 
@@ -86,192 +86,157 @@ fn create_strided_byte_source_u16(stride: usize) -> Vec<u8> {
     bytes
 }
 
-fn bench_pixels_u8(c: &mut Criterion) {
+#[divan::bench]
+fn bench_pixels_u8(bencher: Bencher) {
     let plane = create_plane_u8();
 
-    c.bench_function("pixels_u8", |b| {
-        b.iter(|| {
-            let sum: u64 = black_box(&plane).pixels().map(|p| p as u64).sum();
-            black_box(sum);
-        });
+    bencher.bench(|| {
+        let sum: u64 = black_box(&plane).pixels().map(|p| p as u64).sum();
+        black_box(sum);
     });
 }
 
-fn bench_pixels_u16(c: &mut Criterion) {
+#[divan::bench]
+fn bench_pixels_u16(bencher: Bencher) {
     let plane = create_plane_u16();
 
-    c.bench_function("pixels_u16", |b| {
-        b.iter(|| {
-            let sum: u64 = black_box(&plane).pixels().map(|p| p as u64).sum();
-            black_box(sum);
-        });
+    bencher.bench(|| {
+        let sum: u64 = black_box(&plane).pixels().map(|p| p as u64).sum();
+        black_box(sum);
     });
 }
 
-fn bench_byte_data_u8(c: &mut Criterion) {
+#[divan::bench]
+fn bench_byte_data_u8(bencher: Bencher) {
     let plane = create_plane_u8();
 
-    c.bench_function("byte_data_u8", |b| {
-        b.iter(|| {
-            let sum: u64 = black_box(&plane).byte_data().map(|b| b as u64).sum();
-            black_box(sum);
-        });
+    bencher.bench(|| {
+        let sum: u64 = black_box(&plane).byte_data().map(|b| b as u64).sum();
+        black_box(sum);
     });
 }
 
-fn bench_byte_data_u16(c: &mut Criterion) {
+#[divan::bench]
+fn bench_byte_data_u16(bencher: Bencher) {
     let plane = create_plane_u16();
 
-    c.bench_function("byte_data_u16", |b| {
-        b.iter(|| {
-            let sum: u64 = black_box(&plane).byte_data().map(|b| b as u64).sum();
-            black_box(sum);
-        });
+    bencher.bench(|| {
+        let sum: u64 = black_box(&plane).byte_data().map(|b| b as u64).sum();
+        black_box(sum);
     });
 }
 
-fn bench_copy_from_slice_u8(c: &mut Criterion) {
+#[divan::bench]
+fn bench_copy_from_slice_u8(bencher: Bencher) {
     let mut plane = create_plane_u8();
     let source = create_source_u8();
 
-    c.bench_function("copy_from_slice_u8", |b| {
-        b.iter(|| {
-            black_box(&mut plane)
-                .copy_from_slice(black_box(&source))
-                .unwrap();
-        });
+    bencher.bench_local(|| {
+        black_box(&mut plane)
+            .copy_from_slice(black_box(&source))
+            .unwrap();
     });
 }
 
-fn bench_copy_from_slice_u16(c: &mut Criterion) {
+#[divan::bench]
+fn bench_copy_from_slice_u16(bencher: Bencher) {
     let mut plane = create_plane_u16();
     let source = create_source_u16();
 
-    c.bench_function("copy_from_slice_u16", |b| {
-        b.iter(|| {
-            black_box(&mut plane)
-                .copy_from_slice(black_box(&source))
-                .unwrap();
-        });
+    bencher.bench_local(|| {
+        black_box(&mut plane)
+            .copy_from_slice(black_box(&source))
+            .unwrap();
     });
 }
 
 #[cfg(feature = "padding_api")]
-fn bench_uninit_copy_from_slice_u8(c: &mut Criterion) {
+#[divan::bench]
+fn bench_uninit_copy_from_slice_u8(bencher: Bencher) {
     let mut plane = create_uninit_plane_u8();
     let source = create_source_u8();
 
-    c.bench_function("uninit_copy_from_slice_u8", |b| {
-        b.iter(|| {
-            for (dst, src) in black_box(&mut plane)
-                .data_mut()
-                .iter_mut()
-                .zip(black_box(&source))
-            {
-                dst.write(*src);
-            }
-        });
+    bencher.bench_local(|| {
+        for (dst, src) in black_box(&mut plane)
+            .data_mut()
+            .iter_mut()
+            .zip(black_box(&source))
+        {
+            dst.write(*src);
+        }
     });
 }
 
 #[cfg(feature = "padding_api")]
-fn bench_uninit_copy_from_slice_u16(c: &mut Criterion) {
+#[divan::bench]
+fn bench_uninit_copy_from_slice_u16(bencher: Bencher) {
     let mut plane = create_uninit_plane_u16();
     let source = create_source_u16();
 
-    c.bench_function("uninit_copy_from_slice_u16", |b| {
-        b.iter(|| {
-            for (dst, src) in black_box(&mut plane)
-                .data_mut()
-                .iter_mut()
-                .zip(black_box(&source))
-            {
-                dst.write(*src);
-            }
-        });
+    bencher.bench_local(|| {
+        for (dst, src) in black_box(&mut plane)
+            .data_mut()
+            .iter_mut()
+            .zip(black_box(&source))
+        {
+            dst.write(*src);
+        }
     });
 }
 
-fn bench_copy_from_u8_slice_u8(c: &mut Criterion) {
+#[divan::bench]
+fn bench_copy_from_u8_slice_u8(bencher: Bencher) {
     let mut plane = create_plane_u8();
     let source = create_byte_source_u8();
 
-    c.bench_function("copy_from_u8_slice_u8", |b| {
-        b.iter(|| {
-            black_box(&mut plane)
-                .copy_from_u8_slice(black_box(&source))
-                .unwrap();
-        });
+    bencher.bench_local(|| {
+        black_box(&mut plane)
+            .copy_from_u8_slice(black_box(&source))
+            .unwrap();
     });
 }
 
-fn bench_copy_from_u8_slice_u16(c: &mut Criterion) {
+#[divan::bench]
+fn bench_copy_from_u8_slice_u16(bencher: Bencher) {
     let mut plane = create_plane_u16();
     let source = create_byte_source_u16();
 
-    c.bench_function("copy_from_u8_slice_u16", |b| {
-        b.iter(|| {
-            black_box(&mut plane)
-                .copy_from_u8_slice(black_box(&source))
-                .unwrap();
-        });
+    bencher.bench_local(|| {
+        black_box(&mut plane)
+            .copy_from_u8_slice(black_box(&source))
+            .unwrap();
     });
 }
 
-fn bench_copy_from_u8_slice_with_stride_u8(c: &mut Criterion) {
+#[divan::bench]
+fn bench_copy_from_u8_slice_with_stride_u8(bencher: Bencher) {
     let mut plane = create_plane_u8();
     // Add 64 pixels of padding per row for a realistic strided scenario
     let stride = WIDTH + 64;
     let source = create_strided_byte_source_u8(stride);
 
-    c.bench_function("copy_from_u8_slice_with_stride_u8", |b| {
-        b.iter(|| {
-            black_box(&mut plane)
-                .copy_from_u8_slice_with_stride(black_box(&source), stride)
-                .unwrap();
-        });
+    bencher.bench_local(|| {
+        black_box(&mut plane)
+            .copy_from_u8_slice_with_stride(black_box(&source), stride)
+            .unwrap();
     });
 }
 
-fn bench_copy_from_u8_slice_with_stride_u16(c: &mut Criterion) {
+#[divan::bench]
+fn bench_copy_from_u8_slice_with_stride_u16(bencher: Bencher) {
     let mut plane = create_plane_u16();
     // Add 64 pixels of padding per row for a realistic strided scenario
     let stride = WIDTH + 64;
     let stride_bytes = stride * 2;
     let source = create_strided_byte_source_u16(stride);
 
-    c.bench_function("copy_from_u8_slice_with_stride_u16", |b| {
-        b.iter(|| {
-            black_box(&mut plane)
-                .copy_from_u8_slice_with_stride(black_box(&source), stride_bytes)
-                .unwrap();
-        });
+    bencher.bench_local(|| {
+        black_box(&mut plane)
+            .copy_from_u8_slice_with_stride(black_box(&source), stride_bytes)
+            .unwrap();
     });
 }
 
-#[cfg(feature = "padding_api")]
-criterion_group!(
-    padding_api_benches,
-    bench_uninit_copy_from_slice_u8,
-    bench_uninit_copy_from_slice_u16,
-);
-
-criterion_group!(
-    benches,
-    bench_pixels_u8,
-    bench_pixels_u16,
-    bench_byte_data_u8,
-    bench_byte_data_u16,
-    bench_copy_from_slice_u8,
-    bench_copy_from_slice_u16,
-    bench_copy_from_u8_slice_u8,
-    bench_copy_from_u8_slice_u16,
-    bench_copy_from_u8_slice_with_stride_u8,
-    bench_copy_from_u8_slice_with_stride_u16
-);
-
-#[cfg(not(feature = "padding_api"))]
-criterion_main!(benches);
-
-#[cfg(feature = "padding_api")]
-criterion_main!(benches, padding_api_benches);
+fn main() {
+    divan::main();
+}
