@@ -22,7 +22,6 @@
 //! - 8-bit frames must use `u8`
 //! - 9-16 bit frames must use `u16`
 
-use num_traits::PrimInt;
 use std::fmt::Debug;
 
 mod private {
@@ -56,14 +55,62 @@ mod private {
 /// i.e. using [`std::mem::zeroed`] must __not__ cause undefined behavior for
 /// implementing types.
 pub unsafe trait Pixel:
-    Debug + Copy + Clone + Default + Send + Sync + PrimInt + 'static + private::Sealed
+    Debug + Copy + Clone + Default + Send + Sync + 'static + private::Sealed
 {
+    /// Lossless and cheap conversion into a `u16`.
+    fn as_u16(self) -> u16;
+
+    /// Lossless and cheap conversion into a `u32`.
+    #[inline]
+    fn as_u32(self) -> u32 {
+        u32::from(self.as_u16())
+    }
+
+    /// Lossless and cheap conversion into a `u64`.
+    #[inline]
+    fn as_u64(self) -> u64 {
+        u64::from(self.as_u16())
+    }
+
+    /// Lossless and cheap conversion into a `u128`.
+    #[inline]
+    fn as_u128(self) -> u128 {
+        u128::from(self.as_u16())
+    }
+
+    /// Lossless and cheap conversion into a `i32`.
+    #[inline]
+    fn as_i32(self) -> i32 {
+        i32::from(self.as_u16())
+    }
+
+    /// Lossless and cheap conversion into a `i64`.
+    #[inline]
+    fn as_i64(self) -> i64 {
+        i64::from(self.as_u16())
+    }
+
+    /// Lossless and cheap conversion into a `i128`.
+    #[inline]
+    fn as_i128(self) -> i128 {
+        i128::from(self.as_u16())
+    }
 }
 
 /// Pixel implementation for 8-bit video data.
 // SAFETY: u8 is valid if represented by a zeroed byte.
-unsafe impl Pixel for u8 {}
+unsafe impl Pixel for u8 {
+    #[inline]
+    fn as_u16(self) -> u16 {
+        u16::from(self)
+    }
+}
 
 /// Pixel implementation for high bit-depth (9-16 bit) video data.
 // SAFETY: u16 is valid if represented by zeroed bytes.
-unsafe impl Pixel for u16 {}
+unsafe impl Pixel for u16 {
+    #[inline]
+    fn as_u16(self) -> u16 {
+        self
+    }
+}
