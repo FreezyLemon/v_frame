@@ -114,3 +114,40 @@ unsafe impl Pixel for u16 {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn u8() {
+        for v in 0..=u8::MAX {
+            assert_eq!(v, u8::try_from(v.as_u16()).expect("u16 fits into u8"));
+            assert_eq!(v, u8::try_from(v.as_u32()).expect("u32 fits into u8"));
+            assert_eq!(v, u8::try_from(v.as_u64()).expect("u64 fits into u8"));
+            assert_eq!(v, u8::try_from(v.as_u64()).expect("u64 fits into u8"));
+            assert_eq!(v, u8::try_from(v.as_u128()).expect("u128 fits into u8"));
+
+            assert_eq!(v, u8::try_from(v.as_i32()).expect("i32 fits into u8"));
+            assert_eq!(v, u8::try_from(v.as_i64()).expect("i64 fits into u8"));
+            assert_eq!(v, u8::try_from(v.as_i64()).expect("i64 fits into u8"));
+            assert_eq!(v, u8::try_from(v.as_i128()).expect("i128 fits into u8"));
+        }
+    }
+
+    #[test]
+    fn u16() {
+        for v in 0..=u16::MAX {
+            assert_eq!(v, v.as_u16());
+            assert_eq!(v, u16::try_from(v.as_u32()).expect("u32 fits into u16"));
+            assert_eq!(v, u16::try_from(v.as_u64()).expect("u64 fits into u16"));
+            assert_eq!(v, u16::try_from(v.as_u64()).expect("u64 fits into u16"));
+            assert_eq!(v, u16::try_from(v.as_u128()).expect("u128 fits into u16"));
+
+            assert_eq!(v, u16::try_from(v.as_i32()).expect("i32 fits into u16"));
+            assert_eq!(v, u16::try_from(v.as_i64()).expect("i64 fits into u16"));
+            assert_eq!(v, u16::try_from(v.as_i64()).expect("i64 fits into u16"));
+            assert_eq!(v, u16::try_from(v.as_i128()).expect("i128 fits into u16"));
+        }
+    }
+}
