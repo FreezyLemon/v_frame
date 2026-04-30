@@ -57,6 +57,24 @@ mod private {
 pub unsafe trait Pixel:
     Debug + Copy + Clone + Default + Send + Sync + 'static + private::Sealed
 {
+    /// Lossless and cheap conversion from a `u8` into `Self`.
+    fn from_u8(x: u8) -> Self;
+
+    /// Conversion from a `u16` into `Self`.
+    ///
+    /// Returns `None` if the implementing type cannot losslessly
+    /// represent the value of `x`.
+    fn try_from_u16(x: u16) -> Option<Self>;
+
+    /// Conversion from any integer type into `Self`.
+    ///
+    /// Returns `None` if the implementing type cannot losslessly
+    /// represent the value of `x`.
+    #[inline]
+    fn try_from_int<T: TryInto<u16>>(x: T) -> Option<Self> {
+        x.try_into().ok().and_then(Self::try_from_u16)
+    }
+
     /// Lossless and cheap conversion into a `u16`.
     fn as_u16(self) -> u16;
 
@@ -101,6 +119,16 @@ pub unsafe trait Pixel:
 // SAFETY: u8 is valid if represented by a zeroed byte.
 unsafe impl Pixel for u8 {
     #[inline]
+    fn from_u8(x: u8) -> Self {
+        x
+    }
+
+    #[inline]
+    fn try_from_u16(x: u16) -> Option<Self> {
+        u8::try_from(x).ok().map(Self::from_u8)
+    }
+
+    #[inline]
     fn as_u16(self) -> u16 {
         u16::from(self)
     }
@@ -109,6 +137,16 @@ unsafe impl Pixel for u8 {
 /// Pixel implementation for high bit-depth (9-16 bit) video data.
 // SAFETY: u16 is valid if represented by zeroed bytes.
 unsafe impl Pixel for u16 {
+    #[inline]
+    fn from_u8(x: u8) -> Self {
+        Self::from(x)
+    }
+
+    #[inline]
+    fn try_from_u16(x: u16) -> Option<Self> {
+        Some(x)
+    }
+
     #[inline]
     fn as_u16(self) -> u16 {
         self
