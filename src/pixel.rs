@@ -174,6 +174,44 @@ mod tests {
     }
 
     #[test]
+    fn u8_from() {
+        for v in 0..=u8::MAX {
+            if v <= i8::MAX as u8 {
+                assert_eq!(v, u8::try_from_int(v as i8).expect("i8 fits into u8"));
+            }
+
+            assert_eq!(v, u8::from_u8(v));
+            assert_eq!(v, u8::try_from_u16(v as u16).expect("u16 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as i16).expect("i16 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as i32).expect("i32 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as i64).expect("i64 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as i128).expect("i128 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as u32).expect("u32 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as u64).expect("u64 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as u128).expect("u128 fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as isize).expect("isize fits into u8"));
+            assert_eq!(v, u8::try_from_int(v as usize).expect("usize fits into u8"));
+        }
+    }
+
+    #[test]
+    fn u16_from() {
+        for v in 0..=u16::MAX {
+            assert_eq!(v, u16::try_from_u16(v).expect("u16 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as i8).expect("i8 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as i16).expect("i16 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as i32).expect("i32 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as i64).expect("i64 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as i128).expect("i128 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as u32).expect("u32 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as u64).expect("u64 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as u128).expect("u128 fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as isize).expect("isize fits into u16"));
+            assert_eq!(v, u16::try_from_int(v as usize).expect("usize fits into u16"));
+        }
+    }
+
+    #[test]
     fn u16() {
         for v in 0..=u16::MAX {
             assert_eq!(v, v.as_u16());
