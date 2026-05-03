@@ -61,10 +61,12 @@ pub unsafe trait Pixel:
     + Default
     + Send
     + Sync
+    + TryInto<u8>
     + Into<u16>
     + Into<u32>
     + Into<u64>
     + Into<u128>
+    + TryInto<i16>
     + Into<i32>
     + Into<i64>
     + Into<i128>
