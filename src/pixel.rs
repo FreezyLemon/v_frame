@@ -24,6 +24,8 @@
 
 use std::fmt::Debug;
 
+use num_traits::AsPrimitive;
+
 mod private {
     pub trait Sealed {}
 
@@ -66,13 +68,15 @@ pub unsafe trait Pixel:
     + Into<u32>
     + Into<u64>
     + Into<u128>
-    + TryInto<i16>
     + Into<i32>
     + Into<i64>
     + Into<i128>
     + Into<usize>
     + From<u8>
-    + TryFrom<u16>
+    + AsPrimitive<u8>
+    + AsPrimitive<i16>
+    + AsPrimitive<i8>
+    + AsPrimitive<isize>
     + 'static
     + private::Sealed
 {
