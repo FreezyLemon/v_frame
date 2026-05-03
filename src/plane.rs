@@ -317,8 +317,8 @@ impl<T: Pixel> Plane<T> {
         let total = self.width().get() * self.height().get() * byte_width;
         ExactSizeWrapper {
             iter: self.pixels().flat_map(move |pix| {
-                let bytes = pix.as_u16().to_le_bytes();
-                bytes.into_iter().take(byte_width)
+                let pix: u16 = pix.into();
+                pix.to_le_bytes().into_iter().take(byte_width)
             }),
             len: total,
         }
