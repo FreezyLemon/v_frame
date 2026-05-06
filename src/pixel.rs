@@ -55,7 +55,8 @@ mod private {
 /// i.e. using [`std::mem::zeroed`] must __not__ cause undefined behavior for
 /// implementing types.
 pub unsafe trait Pixel:
-    Debug
+    Sized
+    + Debug
     + Copy
     + Clone
     + Default
@@ -65,13 +66,11 @@ pub unsafe trait Pixel:
     + Into<u32>
     + Into<u64>
     + Into<u128>
-    + TryInto<i16>
     + Into<i32>
     + Into<i64>
     + Into<i128>
     + Into<usize>
     + From<u8>
-    + TryFrom<u16>
     + 'static
     + private::Sealed
 {
