@@ -64,6 +64,7 @@ pub unsafe trait Pixel:
     + Sync
     + Into<u16>
     + From<u8>
+    + TryFrom<u16, Error: std::error::Error>
     + 'static
     + private::Sealed
 {
