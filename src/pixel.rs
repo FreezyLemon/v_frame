@@ -63,13 +63,6 @@ pub unsafe trait Pixel:
     + Send
     + Sync
     + Into<u16>
-    + Into<u32>
-    + Into<u64>
-    + Into<u128>
-    + Into<i32>
-    + Into<i64>
-    + Into<i128>
-    + Into<usize>
     + From<u8>
     + 'static
     + private::Sealed
