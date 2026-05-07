@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 0.6.0
+
+- [Breaking] `FrameBuilder`, `Plane`, and geometry APIs now take plain `usize` / zeroable values instead of `NonZero*` wrappers.
+- [Breaking] Manual plane geometry construction is no longer supported; geometry is managed by the crate.
+- [Breaking] Error types are split into `frame::error` and `plane::error`.
+- Allow uninitialized `Plane<T>`.
+- Add `std` traits to `Frame`, `Plane`, and `AlignedData`.
+- Fix soundness issues.
+
 ## Version 0.5.2
 
 - perf: copy_from_slice per row
