@@ -1,14 +1,15 @@
 use std::alloc::{Layout, alloc, alloc_zeroed, dealloc, handle_alloc_error};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::mem::{ManuallyDrop, MaybeUninit};
+use std::mem::{ManuallyDrop, MaybeUninit, align_of};
 use std::num::NonZeroUsize;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
 use crate::pixel::Pixel;
 
-// Minimum data alignment to help with SIMD
+// Minimum data alignment to help with SIMD. Non-empty allocations use this or
+// `align_of::<T>()`, whichever is larger.
 const DATA_ALIGNMENT: usize = {
     if cfg!(target_arch = "wasm32") && cfg!(not(target_os = "wasi")) {
         // wasm32-unknown-unknown, wasm32-unknown-emscripten
@@ -34,13 +35,18 @@ unsafe impl<T: Sync> Sync for AlignedData<T> {}
 impl<T> AlignedData<T> {
     const fn layout(len: NonZeroUsize) -> Layout {
         const { assert!(DATA_ALIGNMENT.is_power_of_two()) };
+        let alignment = if align_of::<T>() > DATA_ALIGNMENT {
+            align_of::<T>()
+        } else {
+            DATA_ALIGNMENT
+        };
         let t_size = const { NonZeroUsize::new(size_of::<T>()).expect("T is Sized") };
 
         let size = len
             .checked_mul(t_size)
             .expect("allocation size does not overflow usize");
 
-        match Layout::from_size_align(size.get(), DATA_ALIGNMENT) {
+        match Layout::from_size_align(size.get(), alignment) {
             Ok(l) => l,
             _ => panic!("invalid layout"),
         }
@@ -217,6 +223,25 @@ mod tests {
         AlignedData::<u8>::new_uninit(0);
         AlignedData::<u16>::new_uninit(0);
         AlignedData::<String>::new_uninit(0);
+    }
+
+    #[cfg(miri)]
+    #[test]
+    fn new_uninit_underaligns_overaligned_types() {
+        #[allow(dead_code)]
+        #[repr(align(1048576))]
+        struct OverAligned([u8; 1]);
+
+        // Issue: `AlignedData::new_uninit` allocates with `DATA_ALIGNMENT`
+        // rather than `max(DATA_ALIGNMENT, align_of::<T>())`. Safe callers can
+        // therefore create `AlignedData<MaybeUninit<T>>` for an over-aligned
+        // `T`, and the safe slice accessors form references whose required
+        // alignment is stronger than the allocation's layout. The public
+        // `Plane::new_uninit` padding API forwards to this helper for arbitrary
+        // `T`, so this can be reached without an unsafe call before any
+        // `assume_init`.
+        let mut data = AlignedData::<OverAligned>::new_uninit(1);
+        data[0].write(OverAligned([0]));
     }
 
     #[test]

@@ -59,6 +59,20 @@ fn plane_new_u16() {
     }
 }
 
+#[cfg(miri)]
+#[test]
+fn mutable_geometry_fields_can_break_row_slice_invariant() {
+    let mut geometry = simple_geometry(1, 1);
+    geometry.pad_left = 1;
+
+    // Regression test: `PlaneGeometry` fields are public, so constructors must
+    // restore the dependent `stride = width + pad_left + pad_right` invariant
+    // before row iteration relies on it.
+    let plane: Plane<u8> = Plane::new(geometry);
+    assert_eq!(plane.geometry.stride.get(), 2);
+    assert_eq!(plane.rows().next(), Some(&[0][..]));
+}
+
 #[test]
 fn plane_dimensions() {
     let geometry = simple_geometry(16, 9);
