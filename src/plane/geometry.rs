@@ -11,31 +11,16 @@ use crate::chroma::ChromaSubsampling;
 /// The `stride` represents the number of pixels per row in the data buffer,
 /// which is equal to `width + pad_left + pad_right`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(clippy::manual_non_exhaustive)]
 pub struct PlaneGeometry {
-    /// Width of the visible area in pixels.
-    pub width: NonZeroUsize,
-    /// Height of the visible area in pixels.
-    pub height: NonZeroUsize,
-    /// Data stride (pixels per row in the buffer, including padding).
-    pub stride: NonZeroUsize,
-    /// Number of padding pixels on the left side.
-    pub pad_left: usize,
-    /// Number of padding pixels on the right side.
-    pub pad_right: usize,
-    /// Number of padding pixels on the top.
-    pub pad_top: usize,
-    /// Number of padding pixels on the bottom.
-    pub pad_bottom: usize,
-    /// The horizontal subsampling ratio of this plane compared to the luma plane
-    /// Will be 1 if no subsampling
-    pub subsampling_x: NonZeroU8,
-    /// The horizontal subsampling ratio of this plane compared to the luma plane
-    /// Will be 1 if no subsampling
-    pub subsampling_y: NonZeroU8,
-
-    // No manual instantiation outside of this module
-    _marker: (),
+    width: NonZeroUsize,
+    height: NonZeroUsize,
+    stride: NonZeroUsize,
+    pad_left: usize,
+    pad_right: usize,
+    pad_top: usize,
+    pad_bottom: usize,
+    subsampling_x: NonZeroU8,
+    subsampling_y: NonZeroU8,
 }
 
 impl PlaneGeometry {
@@ -74,7 +59,6 @@ impl PlaneGeometry {
             pad_bottom,
             subsampling_x,
             subsampling_y,
-            _marker: (),
         })
     }
 
@@ -92,27 +76,77 @@ impl PlaneGeometry {
         Self::new(width, height, 0, 0, 0, 0, subsampling_x, subsampling_y)
     }
 
+    /// Width of the visible area in pixels.
+    ///
+    /// Guaranteed to be non-zero.
     #[inline]
-    pub(crate) fn normalized(self) -> Option<Self> {
-        Self::new(
-            self.width.get(),
-            self.height.get(),
-            self.pad_left,
-            self.pad_right,
-            self.pad_top,
-            self.pad_bottom,
-            self.subsampling_x.get(),
-            self.subsampling_y.get(),
-        )
+    #[must_use]
+    pub fn width(&self) -> usize {
+        self.width.get()
     }
 
+    /// Height of the visible area in pixels.
+    ///
+    /// Guaranteed to be non-zero.
     #[inline]
-    pub(crate) fn allocation_len(self) -> Option<usize> {
-        self.height
-            .get()
-            .checked_add(self.pad_top)?
-            .checked_add(self.pad_bottom)?
-            .checked_mul(self.stride.get())
+    #[must_use]
+    pub fn height(&self) -> usize {
+        self.height.get()
+    }
+
+    /// Data stride (pixels per row in the buffer, including padding).
+    ///
+    /// Guaranteed to be non-zero.
+    #[inline]
+    #[must_use]
+    pub fn stride(&self) -> usize {
+        self.stride.get()
+    }
+
+    /// Number of padding pixels on the left side.
+    #[inline]
+    #[must_use]
+    pub fn pad_left(&self) -> usize {
+        self.pad_left
+    }
+
+    /// Number of padding pixels on the right side.
+    #[inline]
+    #[must_use]
+    pub fn pad_right(&self) -> usize {
+        self.pad_right
+    }
+
+    /// Number of padding pixels on the top.
+    #[inline]
+    #[must_use]
+    pub fn pad_top(&self) -> usize {
+        self.pad_top
+    }
+
+    /// Number of padding pixels on the bottom.
+    #[inline]
+    #[must_use]
+    pub fn pad_bottom(&self) -> usize {
+        self.pad_bottom
+    }
+
+    /// The horizontal subsampling ratio of this plane compared to the luma plane.
+    ///
+    /// Guaranteed to be non-zero, and 1 if not subsampled.
+    #[inline]
+    #[must_use]
+    pub fn subsampling_x(&self) -> u8 {
+        self.subsampling_x.get()
+    }
+
+    /// The horizontal subsampling ratio of this plane compared to the luma plane.
+    ///
+    /// Guaranteed to be non-zero, and 1 if not subsampled.
+    #[inline]
+    #[must_use]
+    pub fn subsampling_y(&self) -> u8 {
+        self.subsampling_y.get()
     }
 
     /// Returns a new [`PlaneGeometry`] based on `self` and according to `subsampling`.
@@ -170,14 +204,25 @@ impl PlaneGeometry {
         .ok_or(SubsamplingError)
     }
 
-    /// Returns the total height of the plane, including padding
+    /// Returns the index for the first visible pixel.
     #[inline]
     #[must_use]
-    #[cfg_attr(not(feature = "padding_api"), doc(hidden))]
-    pub fn alloc_height(&self) -> NonZeroUsize {
-        self.height
-            .saturating_add(self.pad_top)
-            .saturating_add(self.pad_bottom)
+    pub fn data_origin(&self) -> usize {
+        self.stride() * self.pad_top + self.pad_left
+    }
+
+    /// Returns the total height of the plane, including padding.
+    #[inline]
+    #[must_use]
+    pub fn alloc_height(&self) -> usize {
+        self.height() + self.pad_top + self.pad_bottom
+    }
+
+    /// Returns the total allocation size of the plane, including padding.
+    #[inline]
+    #[must_use]
+    pub fn alloc_size(&self) -> usize {
+        self.alloc_height() * self.stride()
     }
 }
 
@@ -202,15 +247,15 @@ mod tests {
         assert!(PlaneGeometry::unpadded(1920, 1080, 1, 0).is_none());
 
         let g = PlaneGeometry::unpadded(1920, 1080, 1, 1).expect("unpadded geometry works");
-        assert_eq!(g.width.get(), 1920);
-        assert_eq!(g.height.get(), 1080);
+        assert_eq!(g.width(), 1920);
+        assert_eq!(g.height(), 1080);
         assert_eq!(g.stride, g.width);
-        assert_eq!(g.pad_left, 0);
-        assert_eq!(g.pad_right, 0);
-        assert_eq!(g.pad_top, 0);
-        assert_eq!(g.pad_bottom, 0);
-        assert_eq!(g.subsampling_x.get(), 1);
-        assert_eq!(g.subsampling_y.get(), 1);
+        assert_eq!(g.pad_left(), 0);
+        assert_eq!(g.pad_right(), 0);
+        assert_eq!(g.pad_top(), 0);
+        assert_eq!(g.pad_bottom(), 0);
+        assert_eq!(g.subsampling_x(), 1);
+        assert_eq!(g.subsampling_y(), 1);
     }
 
     #[test]
@@ -221,15 +266,15 @@ mod tests {
         assert!(PlaneGeometry::new(1920, 1080, 40, 30, 20, 10, 1, 0).is_none());
 
         let g = PlaneGeometry::new(1920, 1080, 40, 30, 20, 10, 1, 1).expect("new geometry works");
-        assert_eq!(g.width.get(), 1920);
-        assert_eq!(g.height.get(), 1080);
-        assert_eq!(g.stride.get(), 1920 + 40 + 30);
-        assert_eq!(g.pad_left, 40);
-        assert_eq!(g.pad_right, 30);
-        assert_eq!(g.pad_top, 20);
-        assert_eq!(g.pad_bottom, 10);
-        assert_eq!(g.subsampling_x.get(), 1);
-        assert_eq!(g.subsampling_y.get(), 1);
+        assert_eq!(g.width(), 1920);
+        assert_eq!(g.height(), 1080);
+        assert_eq!(g.stride(), 1920 + 40 + 30);
+        assert_eq!(g.pad_left(), 40);
+        assert_eq!(g.pad_right(), 30);
+        assert_eq!(g.pad_top(), 20);
+        assert_eq!(g.pad_bottom(), 10);
+        assert_eq!(g.subsampling_x(), 1);
+        assert_eq!(g.subsampling_y(), 1);
     }
 
     #[test]
@@ -254,29 +299,29 @@ mod tests {
             .for_subsampling(ChromaSubsampling::Yuv422)
             .expect("can subsample to Yuv422")
             .expect("subsampled plane exists for Yuv422");
-        assert_eq!(sub.width.get(), 960);
-        assert_eq!(sub.height.get(), 1080);
-        assert_eq!(sub.stride.get(), 960 + 20 + 15);
-        assert_eq!(sub.pad_left, 20);
-        assert_eq!(sub.pad_right, 15);
-        assert_eq!(sub.pad_top, 20);
-        assert_eq!(sub.pad_bottom, 10);
-        assert_eq!(sub.subsampling_x.get(), 2);
-        assert_eq!(sub.subsampling_y.get(), 1);
+        assert_eq!(sub.width(), 960);
+        assert_eq!(sub.height(), 1080);
+        assert_eq!(sub.stride(), 960 + 20 + 15);
+        assert_eq!(sub.pad_left(), 20);
+        assert_eq!(sub.pad_right(), 15);
+        assert_eq!(sub.pad_top(), 20);
+        assert_eq!(sub.pad_bottom(), 10);
+        assert_eq!(sub.subsampling_x(), 2);
+        assert_eq!(sub.subsampling_y(), 1);
 
         let sub = g
             .for_subsampling(ChromaSubsampling::Yuv420)
             .expect("can subsample to Yuv420")
             .expect("subsampled plane exists for Yuv420");
-        assert_eq!(sub.width.get(), 960);
-        assert_eq!(sub.height.get(), 540);
-        assert_eq!(sub.stride.get(), 960 + 20 + 15);
+        assert_eq!(sub.width(), 960);
+        assert_eq!(sub.height(), 540);
+        assert_eq!(sub.stride(), 960 + 20 + 15);
         assert_eq!(sub.pad_left, 20);
         assert_eq!(sub.pad_right, 15);
         assert_eq!(sub.pad_top, 10);
         assert_eq!(sub.pad_bottom, 5);
-        assert_eq!(sub.subsampling_x.get(), 2);
-        assert_eq!(sub.subsampling_y.get(), 2);
+        assert_eq!(sub.subsampling_x(), 2);
+        assert_eq!(sub.subsampling_y(), 2);
     }
 
     #[test]
