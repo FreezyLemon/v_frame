@@ -14,8 +14,7 @@ A Rust library providing efficient data structures and utilities for handling YU
 - **Flexible plane structure**: Efficient memory layout with configurable padding for SIMD operations
 - **Multiple chroma formats**: Support for YUV 4:2:0, 4:2:2, 4:4:4, and monochrome
 - **Builder pattern API**: Safe and ergonomic frame construction with compile-time guarantees
-- **SIMD-friendly alignment**: non-empty planes are aligned to at least 64 bytes
-  on most targets, 8 bytes on non-WASI `wasm32`, or `align_of::<T>()` if larger
+- **SIMD-friendly alignment**: Plane data is aligned to at least 64 bytes on most targets, 8 bytes on non-WASI `wasm32`, or `align_of::<T>()` if larger
 - **WebAssembly support**: Works in both browser (`wasm32-unknown-unknown`) and WASI environments
 - **Zero-copy iterators**: Efficient row-based and pixel-based iteration without allocations
 
@@ -170,7 +169,7 @@ larger.
 
 ## Requirements
 
-- Rust 1.85.0 or later
+- Rust 1.95.0 or later
 - For WebAssembly: `wasm-bindgen` is automatically included for `wasm32-unknown-unknown` target
 
 ## Documentation
