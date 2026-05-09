@@ -36,5 +36,4 @@
 pub mod chroma;
 pub mod frame;
 pub mod pixel;
-pub mod pixel_ext;
 pub mod plane;

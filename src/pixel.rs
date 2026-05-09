@@ -62,31 +62,19 @@ pub unsafe trait Pixel:
     + Default
     + Send
     + Sync
+    + TryInto<u8, Error: core::error::Error>
     + Into<u16>
     + From<u8>
-    + TryFrom<u16, Error: std::error::Error>
+    + TryFrom<u16, Error: core::error::Error>
     + 'static
     + private::Sealed
 {
-    /// Conversion from `u16` to a pixel.
-    ///
-    /// If the pixel is a u8 (single byte), the conversion will be lossy.
-    /// Use [`From::<u8>::from`][From::from] instead if you want to create a pixel from an u8.
-    fn from_u16(value: u16) -> Self;
 }
 
 /// Pixel implementation for 8-bit video data.
 // SAFETY: u8 is valid if represented by a zeroed byte.
-unsafe impl Pixel for u8 {
-    fn from_u16(value: u16) -> Self {
-        value as Self
-    }
-}
+unsafe impl Pixel for u8 {}
 
 /// Pixel implementation for high bit-depth (9-16 bit) video data.
 // SAFETY: u16 is valid if represented by zeroed bytes.
-unsafe impl Pixel for u16 {
-    fn from_u16(value: u16) -> Self {
-        value
-    }
-}
+unsafe impl Pixel for u16 {}
