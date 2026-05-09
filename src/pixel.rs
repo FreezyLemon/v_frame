@@ -22,8 +22,8 @@
 //! - 8-bit frames must use `u8`
 //! - 9-16 bit frames must use `u16`
 
-use num_traits::PrimInt;
-use std::fmt::Debug;
+use core::fmt::{Binary, Debug, Display, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
+use core::hash::Hash;
 
 mod private {
     pub trait Sealed {}
@@ -56,7 +56,36 @@ mod private {
 /// i.e. using [`std::mem::zeroed`] must __not__ cause undefined behavior for
 /// implementing types.
 pub unsafe trait Pixel:
-    Debug + Copy + Clone + Default + Send + Sync + PrimInt + 'static + private::Sealed
+    Sized
+    + Copy
+    + Clone
+    // formatting
+    + Display
+    + Debug
+    + Octal
+    + LowerHex
+    + UpperHex
+    + LowerExp
+    + UpperExp
+    + Binary
+    + Default
+    // comparisons
+    + PartialEq
+    + Eq
+    + PartialOrd
+    + Ord
+    // conversions
+    + TryInto<u8, Error: core::error::Error>
+    + Into<u16>
+    + From<u8>
+    + TryFrom<u16, Error: core::error::Error>
+    // markers
+    + Send
+    + Sync
+    // misc.
+    + Hash
+    + 'static
+    + private::Sealed
 {
 }
 
