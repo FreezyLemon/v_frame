@@ -163,6 +163,12 @@ The crate automatically adjusts memory alignment for WebAssembly: non-WASI
 use a 64-byte minimum. Over-aligned pixel data uses `align_of::<T>()` if that is
 larger.
 
+## `no_std` support
+
+This crate does not depend on the standard library `std` but does require `alloc` to allocate memory for `Plane<T>` data.
+
+Users linking against `std` don't have to do anything. If you want to use this crate without `std`, you need to setup and configure a global allocator. The [Embedded Rust Book](https://docs.rust-embedded.org/book/collections/index.html#using-alloc) might be helpful.
+
 ## Feature Flags
 
 - `padding_api`: Exposes low-level APIs for direct access to plane padding data (`geometry()`, `data()`, `data_mut()`)
